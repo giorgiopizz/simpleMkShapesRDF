@@ -57,12 +57,12 @@ class l2KinProducer(Module):
         #            'mllTwoThree',
         #            'drllOneThree',
         #            'drllTwoThree',
-        #            'ht',
-        #            'vht_pt',
-        #            'vht_phi',
         #            'PfMetDivSumMet',
         #            'upara',
         #            'uperp',
+        #            'vht_pt',
+        #            'vht_phi',
+        #            'WlepMt_whss'
 
         # dilepton variables
         prefix = "new_fw_"
@@ -318,6 +318,10 @@ class l2KinProducer(Module):
             prefix + "m2ljj30",
             "_isOk && _jetOk>=1 && CleanJet_4DV[0].Pt()>30.0 ? CleanJet_4DV[1].Pt()>30.0 ? (Lepton_4DV[0] + Lepton_4DV[1] + CleanJet_4DV[0] + CleanJet_4DV[1]).M() : (Lepton_4DV[0] + Lepton_4DV[1] + CleanJet_4DV[0]).M() : -9999.0",
         )
+        df = df.Define(
+            prefix + "ht",
+            "_isOk ? Sum(Lepton_pt[Lepton_pt>0]) + Sum(CleanJet_pt[CleanJet_pt>30]) + MET_4DV.Pt() : -9999.0",
+        )
 
         # For VBF training
         df = df.Define(
@@ -344,10 +348,48 @@ class l2KinProducer(Module):
         )
 
         # WHSS
-        #            'mlljj20_whss',
-        #            'mlljj30_whss',
-        #            'WlepPt_whss',
-        #            'WlepMt_whss'
+        df = df.Define( # auxiliary variable
+            prefix + "mlljj20_whss_jet2",
+            "_isOk && _jetOk>=1 && CleanJet_4DV[0].Pt()>30.0 && CleanJet_4DV[1].Pt()>20.0 ? {0}dphilep1jj <= {0}dphilep2jj ? (Lepton_4DV[0] + Lepton_4DV[0] + CleanJet_4DV[0] + CleanJet_4DV[1]).M() : (Lepton_4DV[1] + Lepton_4DV[1] + CleanJet_4DV[0] + CleanJet_4DV[1]).M() : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define( # auxiliary variable
+            prefix + "mlljj20_whss_no_jet2",
+            "_isOk && _jetOk>=1 && CleanJet_4DV[0].Pt()>30.0 && CleanJet_4DV[1].Pt()<=20.0 ? {0}dphilep1jj <= {0}dphilep2jj ? (Lepton_4DV[0] + Lepton_4DV[0] + CleanJet_4DV[0]).M() : (Lepton_4DV[1] + Lepton_4DV[1] + CleanJet_4DV[0]).M() : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define(
+            prefix + "mlljj20_whss",
+            "_isOk && _jetOk>=1 && CleanJet_4DV[0].Pt()>30.0 ? CleanJet_4DV[1].Pt()>20.0 ? {0}mlljj20_whss_jet2 : {0}mlljj20_whss_no_jet2 : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define(
+            prefix + "mlljj30_whss",
+            "_isOk && _jetOk>=1 && CleanJet_4DV[0].Pt()>30.0 && CleanJet_4DV[1].Pt()>30.0 ? {0}dphilep1jj <= {0}dphilep2jj ? (Lepton_4DV[0] + Lepton_4DV[0] + CleanJet_4DV[0] + CleanJet_4DV[1]).M() : (Lepton_4DV[1] + Lepton_4DV[1] + CleanJet_4DV[0] + CleanJet_4DV[1]).M() : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define( # auxiliary variable
+            prefix + "WlepPt_whss_jet2",
+            "_isOk && _jetOk>=2 ? {0}dphilep1jj > {0}dphilep2jj ? Lepton_4DV[0].Pt() : Lepton_4DV[1].Pt() : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define( # auxiliary variable
+            prefix + "WlepPt_whss_no_jet2",
+            "_isOk && _jetOk==1 ? {0}detaj1l1 > {0}detaj1l2 ? Lepton_4DV[0].Pt() : Lepton_4DV[1].Pt() : -9999.0".format(
+                prefix
+            ),
+        )
+        df = df.Define(
+            prefix + "WlepPt_whss",
+            "_isOk && _jetOk>=1 ? _jetOk>=2 ? {0}WlepPt_whss_jet2 : {0}WlepPt_whss_no_jet2 : -9999.0".format(
+                prefix
+            ),
+        )
 
         df = df.DropColumns("Lepton_4DV")
         df = df.DropColumns("CleanJet_4DV")

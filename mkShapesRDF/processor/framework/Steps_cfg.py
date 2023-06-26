@@ -26,6 +26,9 @@ Steps = {
         "subTargets": [
             "JES_modules_18UL",
             "l2Kin",
+            "l4Kin",
+            # "formulasToAdd_MC_Full2018v9.py",
+            "formulasMC2018v9",
             "finalSnapshot_Variations",
         ],
     },
@@ -204,12 +207,36 @@ Steps = {
         "module": "jmeCalculator()",
     },
     "l2Kin": {
+        "isChain" : False,
+        "do4MC"   : True,
+        "do4Data" : True,
+        "import"  : "mkShapesRDF.processor.modules.l2KinProducer",
+        "declare" : "l2Kin = lambda : l2KinProducer()",
+        "module"  : "l2Kin()",
+    },
+    "l4Kin": {
+        "isChain" : False,
+        "do4MC"   : True,
+        "do4Data" : True,
+        "import"  : "mkShapesRDF.processor.modules.l4KinProducer",
+        "declare" : "l4Kin = lambda : l4KinProducer()",
+        "module"  : "l4Kin()",
+    },
+    "formulas_test": {
         "isChain": False,
-        "do4MC": True,
+        "do4MC"  : True,
         "do4Data": True,
-        "import": "mkShapesRDF.processor.modules.l2KinProducer",
-        "declare": "l2Kin = lambda : l2KinProducer()",
-        "module": "l2Kin()",
+        "import" : "mkShapesRDF.processor.modules.GenericFormulaAdder",
+        "declare": "formulas_test = lambda : GenericFormulaAdder('data/formulasToAdd_test.py')",
+        "module" : "formulas_test()",
+    },
+    "formulasMC2018v9": {
+        "isChain": False,
+        "do4MC"  : True,
+        "do4Data": False,
+        "import" : "mkShapesRDF.processor.modules.GenericFormulaAdder",
+        "declare": "formulasMC2018v9 = lambda : GenericFormulaAdder(pathToConfigFile='RPLME_FW/processor/data/formulasToAdd_MC_Full2018v9.py')",
+        "module" : "formulasMC2018v9()",
     },
     "leptonSF": {
         "isChain": False,
@@ -256,7 +283,7 @@ Steps = {
                 tmpOutputFilename='output.root', \
                 columns=['*'], \
                 eosPath='RPLME_EOSPATH', outputFilename='RPLME_OUTPUTFILENAME', \
-                includeVariations=True, splitVariations=True, storeNominals=False )",
+                includeVariations=True, splitVariations=True, storeNominals=True )",
         "module": "snapshot()",
     },
     "finalSnapshot_DATA": {
