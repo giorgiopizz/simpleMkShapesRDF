@@ -26,6 +26,7 @@ Steps = {
         "subTargets": [
             "JES_modules_18UL",
             "l2Kin",
+            "l3Kin",
             "l4Kin",
             # "formulasToAdd_MC_Full2018v9.py",
             "formulasMC2018v9",
@@ -213,6 +214,14 @@ Steps = {
         "import"  : "mkShapesRDF.processor.modules.l2KinProducer",
         "declare" : "l2Kin = lambda : l2KinProducer()",
         "module"  : "l2Kin()",
+    },
+    "l3Kin": {
+        "isChain" : False,
+        "do4MC"   : True,
+        "do4Data" : True,
+        "import"  : "mkShapesRDF.processor.modules.l3KinProducer",
+        "declare" : "l3Kin = lambda : l3KinProducer()",
+        "module"  : "l3Kin()",
     },
     "l4Kin": {
         "isChain" : False,

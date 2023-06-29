@@ -123,18 +123,22 @@ class l2KinProducer(Module):
         prefix = "new_fw_"
 
         df = df.Define(
-            prefix + "mll", "_isOk ? (Lepton_4DV[0] + Lepton_4DV[1]).M() : -9999.0"
+            prefix + "mll", "_isOk ? (Lepton_4DV[0] + Lepton_4DV[1]).M() : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
             prefix + "dphill",
             "_isOk ? DeltaPhi(Lepton_phi[0], Lepton_phi[1]) : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
             prefix + "yll",
             "_isOk ? (Lepton_4DV[0] + Lepton_4DV[1]).Rapidity() : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
-            prefix + "ptll", "_isOk ? (Lepton_4DV[0] + Lepton_4DV[1]).Pt() : -9999.0"
+            prefix + "ptll", "_isOk ? (Lepton_4DV[0] + Lepton_4DV[1]).Pt() : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
             prefix + "dphillmet",
@@ -159,9 +163,11 @@ class l2KinProducer(Module):
         df = df.Define(
             prefix + "drll",
             "_isOk ? DeltaR(Lepton_eta[0], Lepton_eta[1], Lepton_phi[0], Lepton_phi[1]) : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
-            prefix + "detall", "_isOk ? abs(Lepton_eta[0] - Lepton_eta[1]) : -9999.0"
+            prefix + "detall", "_isOk ? abs(Lepton_eta[0] - Lepton_eta[1]) : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
             prefix + "dphilmet",
@@ -244,7 +250,8 @@ class l2KinProducer(Module):
             prefix + "choiMass", "_isOk ? sqrt( 2*(Lepton_4DV[0].Pt()*Lepton_4DV[0].Pt()) + 2*(Lepton_4DV[1].Pt()*Lepton_4DV[1].Pt()) + 3*(Lepton_4DV[0].Pt()*Lepton_4DV[1].Pt() + (MET_4DV.Pt())*(Lepton_4DV[0].Pt()+Lepton_4DV[1].Pt()) - MET_4DV.Pt()*ptll*cos(dphilmet)) - 2*(Lepton_4DV[1].Pt()*Lepton_4DV[1].Pt()*cos(dphill)) ) : -9999.0"
         )
         df = df.Define(
-            prefix + "channel", "_isOk ? (abs(Lepton_pdgId[0]) == 11 && abs(Lepton_pdgId[1]) == 11) ? 1 : (abs(Lepton_pdgId[0]) == 11 && abs(Lepton_pdgId[1]) == 13) ? 2 : (abs(Lepton_pdgId[0]) == 13 && abs(Lepton_pdgId[1]) == 11) ? 3 : (abs(Lepton_pdgId[0]) == 13 && abs(Lepton_pdgId[1]) == 13) ? 0 : -9999.0 : -9999.0"
+            prefix + "channel", "_isOk ? (abs(Lepton_pdgId[0]) == 11 && abs(Lepton_pdgId[1]) == 11) ? 1 : (abs(Lepton_pdgId[0]) == 11 && abs(Lepton_pdgId[1]) == 13) ? 2 : (abs(Lepton_pdgId[0]) == 13 && abs(Lepton_pdgId[1]) == 11) ? 3 : (abs(Lepton_pdgId[0]) == 13 && abs(Lepton_pdgId[1]) == 13) ? 0 : -9999.0 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
 
         df = df.Define(
@@ -260,7 +267,8 @@ class l2KinProducer(Module):
                                            mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll12 <  mll13 && mll12 <  mll23 ? mll12 : \
                                            mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll13 <  mll12 && mll13 <  mll23 ? mll13 : \
                                            mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll23 <  mll12 && mll23 <  mll13 ? mll23 : \
-                                           -9999.0 : -9999.0"
+                                           -9999.0 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
 
         df = df.Define(
@@ -276,7 +284,8 @@ class l2KinProducer(Module):
                                             mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll12 <  mll13 && mll12 <  mll23 ? drll12 : \
                                             mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll13 <  mll12 && mll13 <  mll23 ? drll13 : \
                                             mll12 >= 0 && mll13 >= 0 && mll23 >= 0 && mll23 <  mll12 && mll23 <  mll13 ? drll23 : \
-                                            -9999.0 : -9999.0"
+                                            -9999.0 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
 
         df = df.Define(
@@ -284,20 +293,25 @@ class l2KinProducer(Module):
                                                                       mll13 >= 0 && mll23 >= 0 && mll23 >= mll13 ? mll13 : \
                                                                       mll13 >= 0 && mll23 <  0 ? mll13 : \
                                                                       mll13 <  0 && mll23 >= 0 ? mll23 : \
-                                                                      -9999.0: -9999.0"
+                                                                      -9999.0: -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
 
         df = df.Define(
-            prefix + "mllOneThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? mll13 : -9999.0"
+            prefix + "mllOneThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? mll13 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
-            prefix + "mllTwoThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? mll23 : -9999.0"
+            prefix + "mllTwoThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? mll23 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
-            prefix + "drllOneThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? drll13 : -9999.0"
+            prefix + "drllOneThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? drll13 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
-            prefix + "drllTwoThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? drll23 : -9999.0"
+            prefix + "drllTwoThree", "_isOk3l && Lepton_4DV[2].Pt() > 2 ? drll23 : -9999.0",
+            excludeVariations=["JES*", "MET*"],
         )
         df = df.Define(
             prefix + "upara", "_isOk ? utv.P() * cos(DeltaPhi(utv.Phi(), (Lepton_4DV[0] + Lepton_4DV[1]).Phi() )) : -9999.0"
