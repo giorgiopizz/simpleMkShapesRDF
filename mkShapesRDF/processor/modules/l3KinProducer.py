@@ -671,7 +671,6 @@ class l3KinProducer(Module):
                     }
                 }
             }
-        // return ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> {WJet1_best, WJet2_best, bJetHadronic_best, bJetLeptonic_best, AZH_Neutrino_best};
         return {WJet1_best, WJet2_best, bJetHadronic_best, bJetLeptonic_best, AZH_Neutrino_best};
         }
         """)
@@ -701,35 +700,120 @@ class l3KinProducer(Module):
             "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best + ZLepton1 + ZLepton2).M() - (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best).M() : -9999.0",
         )
 
+        df = df.Define(
+            prefix + "AZH_Amass",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best + ZLepton1 + ZLepton2).M() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "AZH_Hmass",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best).M() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "AZH_Tophadronic",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (bJetHadronic_best + WJet1_best + WJet2_best).M() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "AZH_Topleptonic",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (bJetLeptonic_best + ZH3l_XLepton + bJetLeptonic_best).M() : -9999.0",
+        )
 
 
+        ROOT.gInterpreter.Declare("""
+        ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_AZH_var_1bjet(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
+                                                                          ROOT::RVecF jet_btag,
+                                                                          ROOT::RVecF jet_idx,
+                                                                          ROOT::Math::PtEtaPhiMVector Neutrino1,
+                                                                          ROOT::Math::PtEtaPhiMVector Neutrino2,
+                                                                          ROOT::Math::PtEtaPhiMVector XLepton,
+                                                                          ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> AZH_bJet_4vecId_
+        ){
+            float sigmaleptonic = 26.64;
+            float sigmahadronic = 37.73;
+            float TopMassLeptonic_true = 168.7;
+            float TopMassHadronic_true = 163;
+            ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Neutrinos;
+            Neutrinos.push_back(Neutrino1);
+            Neutrinos.push_back(Neutrino2);
+            ROOT::Math::PtEtaPhiMVector WJet1_best_onebjet;
+            ROOT::Math::PtEtaPhiMVector WJet2_best_onebjet;
+            ROOT::Math::PtEtaPhiMVector bJetHadronic_best_onebjet;
+            ROOT::Math::PtEtaPhiMVector bJetLeptonic_best_onebjet;
+            ROOT::Math::PtEtaPhiMVector AZH_Neutrino_best_onebjet;
+            float ChisqMin = 9999.0;
+            if (AZH_bJet_4vecId_.size() == 1){
+                for (uint i_neutrino = 0; i_neutrino < 2; ++i_neutrino){
+                    int ibJet2 = 0;
+                    ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> WJets;
+                    for (uint ij = 0; ij < jets_vector.size(); ++ij){
+                        if ( (jets_vector[ij] != AZH_bJet_4vecId_[0]) && (jet_btag[jet_idx[ij]] > jet_btag[jet_idx[ibJet2]]) ) {
+                            ibJet2 = ij;
+                        }
+                    }
+                    ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> bJetPair;
+                    bJetPair.push_back(AZH_bJet_4vecId_[0]);
+                    bJetPair.push_back(jets_vector[ibJet2]);
+                    for (int iw =0; iw < jets_vector.size(); ++iw){
+                        if ( (jets_vector[iw] != AZH_bJet_4vecId_[0]) && (jets_vector[iw] != jets_vector[ibJet2]) ){
+                            WJets.push_back(jets_vector[iw]);
+                        }
+                    }
+                    for(int k = 0; k < 2; k++) {
+                        for (int iWJet1 = 0; iWJet1 < WJets.size(); ++iWJet1){
+                            for (int iWJet2 = iWJet1 + 1; iWJet2 < WJets.size(); ++iWJet2){ 
+                                ROOT::Math::PtEtaPhiMVector WJet1_onebjet = WJets[iWJet1];
+                                ROOT::Math::PtEtaPhiMVector WJet2_onebjet = WJets[iWJet2];
+                                ROOT::Math::PtEtaPhiMVector bJetHadronic_onebjet = bJetPair[k];
+                                ROOT::Math::PtEtaPhiMVector bJetLeptonic_onebjet = bJetPair[1-k];
+                                float WMassLeptonic_onebjet = (XLepton + Neutrinos[i_neutrino]).M();
+                                float WMassHadronic_onebjet = (WJet1_onebjet + WJet2_onebjet).M();
+                                float TopMassLeptonic_onebjet = (XLepton + Neutrinos[i_neutrino] + bJetLeptonic_onebjet).M();
+                                float TopMassHadronic_onebjet = (WJet1_onebjet + WJet2_onebjet + bJetHadronic_onebjet).M();
+                                float Chisq_onebjet = pow((TopMassLeptonic_onebjet-TopMassLeptonic_true)/sigmaleptonic,2) + pow((TopMassHadronic_onebjet-TopMassHadronic_true)/sigmahadronic, 2);
+                                if(Chisq_onebjet < ChisqMin) { 
+                                ChisqMin = Chisq_onebjet;
+                                WJet1_best_onebjet = WJet1_onebjet;
+                                WJet2_best_onebjet = WJet2_onebjet;
+                                bJetHadronic_best_onebjet = bJetHadronic_onebjet;
+                                bJetLeptonic_best_onebjet = bJetLeptonic_onebjet;
+                                AZH_Neutrino_best_onebjet = Neutrinos[i_neutrino];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        return {WJet1_best_onebjet, WJet2_best_onebjet, bJetHadronic_best_onebjet, bJetLeptonic_best_onebjet, AZH_Neutrino_best_onebjet};
+        }
+        """)
+        df = df.Define(
+            "WJet1_best_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "WJet2_best_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "bJetHadronic_best_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "bJetLeptonic_best_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "AZH_Neutrino_best_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
 
+        df = df.Define(
+            prefix + "AZH_mA_minus_mH_onebjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? (ZH3l_XLepton + AZH_Neutrino_best_onebjet + bJetLeptonic_best_onebjet + bJetHadronic_best_onebjet + WJet1_best_onebjet + WJet2_best_onebjet + ZLepton1 + ZLepton2).M() - (ZH3l_XLepton + AZH_Neutrino_best_onebjet + bJetLeptonic_best_onebjet + bJetHadronic_best_onebjet + WJet1_best_onebjet + WJet2_best_onebjet).M() : -9999.0",
+        )
 
-        # if (variable == "AZH_mA_minus_mH"){
-        #         if (nJet < 4 || nbJet < 2) return -9999.0;
-        #         return (XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best + ZLepton1 + ZLepton2).M() - (XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best).M();  
-        # }   
-
-
-        # ROOT.gInterpreter.Declare("""
-        # ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_checkmZ(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector,
-        #                                                             ROOT::RVecF leptons_pdgId,
-        #                                                             ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
-        #                                                             ROOT::RVecF jet_btag, // Jet_btagDeepB,
-        #                                                             ROOT::RVecF jet_idx, // CleanJet_jetIdx,
-        #                                                             ROOT::Math::PtEtaPhiMVector ZH3l_XLepton,
-        #                                                             bool AZH_ok, // WH3l_isOk
-        #                                                             int nJetLoose_ //nJetLoose
-        # ){
-        
-        # }
-        # """)
-        
-
-        #         'AZH_mA_minus_mH': (["F"], {}),
-        #         'AZH_Amass':  (["F"], {}),
-        #         'AZH_Hmass' : (["F"], {}),
-        #         'AZH_ChiSquare' : (["F"], {}),
 
         df = df.DropColumns("_WH3l_isOk")
         df = df.DropColumns("_isOk3l")
@@ -743,5 +827,21 @@ class l3KinProducer(Module):
         df = df.DropColumns("CleanJet_4DV")
         df = df.DropColumns("MET_4DV")
         df = df.DropColumns("TkMET_4DV")
+
+        df = df.DropColumns("AZH_bJet_4vecId")
+        df = df.DropColumns("ZH3l_XLepton")
+
+        df = df.DropColumns("AZH_Neutrino_best")
+        df = df.DropColumns("bJetLeptonic_best")
+        df = df.DropColumns("bJetHadronic_best")
+        df = df.DropColumns("WJet1_best")
+        df = df.DropColumns("WJet2_best")
+
+        df = df.DropColumns("AZH_Neutrino_best_onebjet")
+        df = df.DropColumns("bJetLeptonic_best_onebjet")
+        df = df.DropColumns("bJetHadronic_best_onebjet")
+        df = df.DropColumns("WJet1_best_onebjet")
+        df = df.DropColumns("WJet2_best_onebjet")
+
 
         return df
