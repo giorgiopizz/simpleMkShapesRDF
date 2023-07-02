@@ -51,27 +51,12 @@ class l3KinProducer(Module):
 
         df = df.Define("_lepOk",   "Lepton_pt[Lepton_pt > 0].size()")
         df = df.Define("_tkMetOk", "TkMET_4DV.E() > 0")
-        df = df.Define("_jetOk",   "CleanJet_pt[CleanJet_pt > 0].size()")
+        df = df.Define("_jetOk",   "CleanJet_pt[CleanJet_pt > 30 && abs(CleanJet_eta) < 4.7].size()")
 
 
         # Variables yet to be implemented:
         ##############################
 
-        #         # for ZH3l, "l" in these variables *always* refers to the lepton not associated with the Z
-        #         'ZH3l_njet'      : (["F"], {}),
-        #         'ZH3l_Z4lveto'   : (["F"], {}),
-        #         'ZH3l_dmjjmW'    : (["F"], {}),
-        #         'ZH3l_mTlmet'    : (["F"], {}),
-        #         'ZH3l_pdgid_l'   : (["F"], {}),
-        #         'ZH3l_dphilmetjj': (["F"], {}),
-        #         'ZH3l_dphilmetj' : (["F"], {}),
-        #         'ZH3l_pTlmetjj'  : (["F"], {}),
-        #         'ZH3l_pTlmetj'   : (["F"], {}),
-        #         'ZH3l_mTlmetjj'  : (["F"], {}),
-        #         'ZH3l_mTlmetj'  : (["F"], {}),
-        #         'ZH3l_pTZ'       : (["F"], {}),
-        #         'ZH3l_checkmZ'   : (["F"], {}),
-        
         #         'AZH_mA_minus_mH': (["F"], {}),
         #         'AZH_Amass':  (["F"], {}),
         #         'AZH_Hmass' : (["F"], {}),
@@ -80,6 +65,10 @@ class l3KinProducer(Module):
         # Variables definitions
         prefix = "new_fw_"
         Zmass  = 91.1876
+
+
+        ### WH3l variables
+        ##################
 
         ROOT.gInterpreter.Declare("""
         float Get_minmllDiffToZ(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId){
@@ -281,6 +270,466 @@ class l3KinProducer(Module):
             "_WH3l_isOk ? Get_ptW(Lepton_4DV, Lepton_pdgId) : -9999.0", 
             excludeVariations=["JES*", "MET*"],
         )
+
+        ### ZH3l variables
+        ##################
+
+        # For ZH3l, "l" in these variables *always* refers to the lepton not associated with the Z
+
+        ROOT.gInterpreter.Declare("""
+        ROOT::Math::PtEtaPhiMVector Get_ZH3l_Xlepton(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            ROOT::Math::PtEtaPhiMVector ZH3l_XLepton(0.,0.,0.,0.);
+            if (WH3l_isOk == false) return ZH3l_XLepton;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                ZH3l_XLepton = leptons_vector[k];
+                                // float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                // float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                                // ROOT::Math::PtEtaPhiMVector Zlepton1 = leptons_vector[i];
+                                // ROOT::Math::PtEtaPhiMVector Zlepton2 = leptons_vector[j];
+                            }
+                        }
+                    }
+                }
+            }
+            // if (ZH3l_XLepton == ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)) return false;
+            // else return true;
+            return ZH3l_XLepton;
+        }
+        """)
+        df = df.Define(
+            "_ZH3l_isOk",
+            "_WH3l_isOk && (Get_ZH3l_Xlepton(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) != ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)) ? true : false",
+        )
+
+        df = df.Define(
+            "ZH3l_XLepton",
+            "_ZH3l_isOk ? Get_ZH3l_Xlepton(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+        )
+
+        ROOT.gInterpreter.Declare("""
+        ROOT::Math::PtEtaPhiMVector Get_Zlepton1(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            // ROOT::Math::PtEtaPhiMVector ZH3l_XLepton(0.,0.,0.,0.);
+            ROOT::Math::PtEtaPhiMVector Zlepton1(0.,0.,0.,0.);
+            // ROOT::Math::PtEtaPhiMVector Zlepton2(0.,0.,0.,0.);
+            if (WH3l_isOk == false) return Zlepton1;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                // ZH3l_XLepton = leptons_vector[k];
+                                // float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                // float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                                ROOT::Math::PtEtaPhiMVector Zlepton1 = leptons_vector[i];
+                                // ROOT::Math::PtEtaPhiMVector Zlepton2 = leptons_vector[j];
+                            }
+                        }
+                    }
+                }
+            }
+            return Zlepton1;
+        }
+        """)
+        df = df.Define(
+            "ZLepton1",
+            "_ZH3l_isOk ? Get_Zlepton1(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+        )
+
+        ROOT.gInterpreter.Declare("""
+        ROOT::Math::PtEtaPhiMVector Get_Zlepton2(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            // ROOT::Math::PtEtaPhiMVector ZH3l_XLepton(0.,0.,0.,0.);
+            // ROOT::Math::PtEtaPhiMVector Zlepton1(0.,0.,0.,0.);
+            ROOT::Math::PtEtaPhiMVector Zlepton2(0.,0.,0.,0.);
+            if (WH3l_isOk == false) return Zlepton2;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                // ZH3l_XLepton = leptons_vector[k];
+                                // float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                // float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                                // ROOT::Math::PtEtaPhiMVector Zlepton1 = leptons_vector[i];
+                                ROOT::Math::PtEtaPhiMVector Zlepton2 = leptons_vector[j];
+                            }
+                        }
+                    }
+                }
+            }
+            return Zlepton2;
+        }
+        """)
+        df = df.Define(
+            "ZLepton2",
+            "_ZH3l_isOk ? Get_Zlepton2(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+        )
+
+
+        ROOT.gInterpreter.Declare("""
+        int Get_ZH3l_Xlepton_pdgId(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            int output_pdgId = -9999;
+            if (WH3l_isOk == false) return output_pdgId;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                output_pdgId = leptons_pdgId[k]; 
+                                float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                            }
+                        }
+                    }
+                }
+            }
+            return output_pdgId;
+        }
+        """)
+        df = df.Define(
+            prefix + "ZH3l_pdgid_l",
+            "_ZH3l_isOk ? Get_ZH3l_Xlepton_pdgId(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : -9999",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_njet",
+            "_ZH3l_isOk ? CleanJet_pt[CleanJet_pt > 30 && abs(CleanJet_eta) < 4.7].size() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_Z4lveto",
+            "_ZH3l_isOk ? {0}WH3l_mlll - 91.1876 : -9999.0".format(
+                prefix
+            ),
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_dmjjmW",
+            "_ZH3l_isOk && {0}ZH3l_njet >= 2 ? (CleanJet_4DV[0] + CleanJet_4DV[1]).M() - 91.1876 : -9999.0".format(
+                prefix
+            ),
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_mTlmet",
+            "_ZH3l_isOk ? sqrt(2 * ZH3l_XLepton.Pt() * MET_4DV.Pt() * (1 - cos(abs(DeltaPhi(ZH3l_XLepton.Phi(),MET_4DV.Phi()))))) : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_dphilmetjj",
+            "_ZH3l_isOk && _jetOk >= 2 ? abs( DeltaPhi( (ZH3l_XLepton + MET_4DV).Phi(), (CleanJet_4DV[0] + CleanJet_4DV[1]).Phi()) ) : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_dphilmetj",
+            "_ZH3l_isOk && _jetOk >= 1 ? abs( DeltaPhi( (ZH3l_XLepton + MET_4DV).Phi(), CleanJet_4DV[0].Phi()) ) : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_pTlmetjj",
+            "_ZH3l_isOk && _jetOk >= 2 ? (ZH3l_XLepton + MET_4DV + CleanJet_4DV[0] + CleanJet_4DV[1]).Pt() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_pTlmetj",
+            "_ZH3l_isOk && _jetOk >= 1 ? (ZH3l_XLepton + MET_4DV + CleanJet_4DV[0]).Pt() : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_mTlmetj",
+            "_ZH3l_isOk && _jetOk >= 1 ? sqrt(pow((MET_4DV.Pt() + ZH3l_XLepton.Pt() + CleanJet_4DV[0].Pt()),2) - pow((MET_4DV + ZH3l_XLepton + CleanJet_4DV[0]).Px(),2) - pow((MET_4DV + ZH3l_XLepton + CleanJet_4DV[0]).Py(),2)) : -9999.0",
+        )
+
+        df = df.Define(
+            prefix + "ZH3l_mTlmetjj",
+            "_ZH3l_isOk && _jetOk >= 2 ? sqrt(pow((MET_4DV.Pt() + ZH3l_XLepton.Pt() + CleanJet_4DV[0].Pt() + CleanJet_4DV[1].Pt()),2) - pow((MET_4DV + ZH3l_XLepton + CleanJet_4DV[0] + CleanJet_4DV[1]).Px(),2) - pow((MET_4DV + ZH3l_XLepton + CleanJet_4DV[0] + CleanJet_4DV[1]).Py(),2)) : -9999.0",
+        )
+        
+        ROOT.gInterpreter.Declare("""
+        float Get_pTZ(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            float pTZ = -9999.0;
+            if (WH3l_isOk == false) return pTZ;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                // output_pdgId = leptons_pdgId[k]; 
+                                float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                // float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                            }
+                        }
+                    }
+                }
+            }
+            return pTZ;
+        }
+        """)
+        df = df.Define(
+            prefix + "ZH3l_pTZ",
+            "_ZH3l_isOk ? Get_pTZ(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : -9999",
+        )
+
+        ROOT.gInterpreter.Declare("""
+        float Get_checkmZ(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId, bool WH3l_isOk){
+            float checkZmass = -9999.0;
+            if (WH3l_isOk == false) return checkZmass;
+            float minmllDiffToZ = 9999.0;
+            for (uint i = 0; i < 3; i++){
+                for (uint j = i; j < 3; j++){
+                    for (uint k = j; k < 3; k++){
+                        if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            if (mllDiffToZ < minmllDiffToZ){
+                                // output_pdgId = leptons_pdgId[k]; 
+                                // float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
+                                float checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
+                                minmllDiffToZ = mllDiffToZ;
+                            }
+                        }
+                    }
+                }
+            }
+            return checkZmass;
+        }
+        """)
+        df = df.Define(
+            prefix + "ZH3l_checkmZ",
+            "_ZH3l_isOk ? Get_checkmZ(Lepton_4DV, Lepton_pdgId, _WH3l_isOk) : -9999",
+        )
+
+        ### AZH variables
+        #################
+
+        # Reference: https://github.com/latinos/PlotsConfigurations/blob/master/Configurations/AToZH_Full/scripts/AZH_patch.cc
+
+        # Support variables
+        df = df.Define(
+            "nJetLoose",
+            "_ZH3l_isOk ? _jetOk : -9999",
+        )
+
+        df = df.Define(
+            "nJet",
+            "_ZH3l_isOk ? CleanJet_pt[CleanJet_pt > 30 && abs(CleanJet_eta) < 4.7].size() : -9999",
+        )
+
+        ROOT.gInterpreter.Declare("""
+        std::vector<int> Get_njets(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
+                         ROOT::RVecF jet_btag,
+                         ROOT::RVecF jet_idx
+        ){
+            int njet = 0;
+            int nbjet = 0;
+            for (uint i = 0; i < jets_vector.size(); ++i){
+                if (jets_vector[i].Pt() > 30 && abs(jets_vector[i].Eta()) < 4.7) {
+                    njet++;
+                    if (jet_btag[jet_idx[i]] > 0.4941) nbjet++;
+                }
+            }
+            return {njet,nbjet};
+        }
+        """)
+        df = df.Define(
+            "nJet_bis",
+            "_ZH3l_isOk ? Get_njets(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx)[0] : -9999",
+        )
+
+        df = df.Define(
+            "nbJet",
+            "_ZH3l_isOk ? Get_njets(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx)[1] : -9999",
+        )
+
+        df = df.Define(
+            "Zeta",
+            "_ZH3l_isOk ? 0.5* pow(80.4, 2) + MET_4DV.Pt() *  ZH3l_XLepton.Pt() * (cos(abs(DeltaPhi(ZH3l_XLepton.Phi(),MET_4DV.Phi() ) ) ) ) : -9999",
+        )
+
+        df = df.Define(
+            "A",
+            "_ZH3l_isOk ? (pow(Zeta,2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2) > 0 ? sqrt((pow(Zeta,2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2)) : 0 : -9999",
+        )
+
+        df = df.Define(
+            "AZH_Neutrino1",
+            "_ZH3l_isOk ? ROOT::Math::PtEtaPhiMVector( MET_4DV.Px(), MET_4DV.Py(), ((Zeta * ZH3l_XLepton.Pz())/pow(ZH3l_XLepton.Pt(), 2)) + A, sqrt( pow(MET_4DV.Pt(), 2) + pow( (Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2) + A, 2)) )  : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+        )
+
+        df = df.Define(
+            "AZH_Neutrino2",
+            "_ZH3l_isOk ? ROOT::Math::PtEtaPhiMVector( MET_4DV.Px(), MET_4DV.Py(), ((Zeta * ZH3l_XLepton.Pz())/pow(ZH3l_XLepton.Pt(), 2)) - A, sqrt( pow(MET_4DV.Pt(), 2) + pow( (Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2) - A, 2)) ) : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+        )
+
+        # df = df.Define(
+        #     "AZH_CleanJet_4DV",
+        #     "_ZH3l_isOk ? CleanJet_4DV[CleanJet_pt > 30 && abs(CleanJet_eta) < 4.7] : ROOT::VecOps::Construct<ROOT::Math::PtEtaPhiMVector>(ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0))",
+        # )
+        
+
+        ROOT.gInterpreter.Declare("""
+        ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_AZH_bJet_4vecId(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
+                                                                            ROOT::RVecF jet_btag,
+                                                                            ROOT::RVecF jet_idx
+        ){
+            ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> output_AZH_bJet_4vecId;
+            for (uint i = 0; i < jets_vector.size(); ++i){
+                if (jets_vector[i].Pt() > 30 && abs(jets_vector[i].Eta()) < 4.7){ 
+                    if (jet_btag[jet_idx[i]] > 0.4941){ 
+                        output_AZH_bJet_4vecId.push_back(jets_vector[i]);
+                    }
+                }
+            }
+            if (jets_vector.size() == 0){
+                ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> output_dummy;
+                ROOT::Math::PtEtaPhiMVector dummy(0.,0.,0.,0.);
+                output_dummy.push_back(dummy);
+                return output_dummy;
+            }
+            return output_AZH_bJet_4vecId;
+        }
+        """)
+        df = df.Define(
+            "AZH_bJet_4vecId",
+            "_ZH3l_isOk && _jetOk > 0 && nbJet > 0 ? Get_AZH_bJet_4vecId(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx) : ROOT::VecOps::Construct<ROOT::Math::PtEtaPhiMVector>(ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0))",
+        )
+        
+        ROOT.gInterpreter.Declare("""
+        ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_AZH_var_2bjet(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
+                                                                          ROOT::RVecF jet_btag,
+                                                                          ROOT::RVecF jet_idx,
+                                                                          ROOT::Math::PtEtaPhiMVector Neutrino1,
+                                                                          ROOT::Math::PtEtaPhiMVector Neutrino2,
+                                                                          ROOT::Math::PtEtaPhiMVector XLepton,
+                                                                          ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> AZH_bJet_4vecId_
+        ){
+            float sigmaleptonic = 26.64;
+            float sigmahadronic = 37.73;
+            float TopMassLeptonic_true = 168.7;
+            float TopMassHadronic_true = 163;
+            ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Neutrinos;
+            Neutrinos.push_back(Neutrino1);
+            Neutrinos.push_back(Neutrino2);
+            ROOT::Math::PtEtaPhiMVector WJet1_best;
+            ROOT::Math::PtEtaPhiMVector WJet2_best;
+            ROOT::Math::PtEtaPhiMVector bJetHadronic_best;
+            ROOT::Math::PtEtaPhiMVector bJetLeptonic_best;
+            ROOT::Math::PtEtaPhiMVector AZH_Neutrino_best;
+            float ChisqMin = 9999.0;
+            for (uint i_neutrino = 0; i_neutrino < 2; ++i_neutrino){
+                for (uint ibJet1 = 0; ibJet1 < AZH_bJet_4vecId_.size(); ++ibJet1){
+                    for (uint ibJet2 = ibJet1 + 1; ibJet2 < AZH_bJet_4vecId_.size(); ++ibJet2){
+                    ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> bJetPair;
+                    bJetPair.push_back(AZH_bJet_4vecId_[ibJet1]);
+                    bJetPair.push_back(AZH_bJet_4vecId_[ibJet2]);
+                    ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> WJets;
+                    for (uint ij = 0; ij < jets_vector.size(); ++ij){
+                        if ((jets_vector[ij] != bJetPair[0]) && (jets_vector[ij] != bJetPair[1])) {
+                            WJets.push_back(jets_vector[ij]);
+                        }
+                    }
+                    for (uint k = 0; k < 2; k++){
+                        for (uint iWJet1 = 0; iWJet1 < WJets.size(); ++iWJet1){
+                            for (uint iWJet2 = iWJet1 + 1; iWJet2 < WJets.size(); ++iWJet2){
+                                ROOT::Math::PtEtaPhiMVector WJet1 = WJets[iWJet1];
+                                ROOT::Math::PtEtaPhiMVector WJet2 = WJets[iWJet2];
+                                ROOT::Math::PtEtaPhiMVector bJetHadronic = bJetPair[k];
+                                ROOT::Math::PtEtaPhiMVector bJetLeptonic = bJetPair[1-k];
+                                float WMassLeptonic = (XLepton + Neutrinos[i_neutrino]).M();
+                                float WMassHadronic = (WJet1 + WJet2).M();
+                                float TopMassLeptonic = (XLepton + Neutrinos[i_neutrino] + bJetLeptonic).M();
+                                float TopMassHadronic = (WJet1 + WJet2 + bJetHadronic).M();
+                                float Chisq = pow((TopMassLeptonic-TopMassLeptonic_true)/sigmaleptonic,2) + pow((TopMassHadronic-TopMassHadronic_true)/sigmahadronic, 2);
+                                if(Chisq < ChisqMin) { 
+                                    ChisqMin = Chisq;
+                                    WJet1_best = WJet1;
+                                    WJet2_best = WJet2;
+                                    bJetHadronic_best = bJetHadronic;
+                                    bJetLeptonic_best = bJetLeptonic;
+                                    AZH_Neutrino_best = Neutrinos[i_neutrino];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        // return ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> {WJet1_best, WJet2_best, bJetHadronic_best, bJetLeptonic_best, AZH_Neutrino_best};
+        return {WJet1_best, WJet2_best, bJetHadronic_best, bJetLeptonic_best, AZH_Neutrino_best};
+        }
+        """)
+        df = df.Define(
+            "WJet1_best",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "WJet2_best",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "bJetHadronic_best",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "bJetLeptonic_best",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+        df = df.Define(
+            "AZH_Neutrino_best",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        )
+
+        df = df.Define(
+            prefix + "AZH_mA_minus_mH",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best + ZLepton1 + ZLepton2).M() - (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best).M() : -9999.0",
+        )
+
+
+
+
+
+        # if (variable == "AZH_mA_minus_mH"){
+        #         if (nJet < 4 || nbJet < 2) return -9999.0;
+        #         return (XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best + ZLepton1 + ZLepton2).M() - (XLepton + AZH_Neutrino_best + bJetLeptonic_best + bJetHadronic_best + WJet1_best + WJet2_best).M();  
+        # }   
+
+
+        # ROOT.gInterpreter.Declare("""
+        # ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_checkmZ(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector,
+        #                                                             ROOT::RVecF leptons_pdgId,
+        #                                                             ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
+        #                                                             ROOT::RVecF jet_btag, // Jet_btagDeepB,
+        #                                                             ROOT::RVecF jet_idx, // CleanJet_jetIdx,
+        #                                                             ROOT::Math::PtEtaPhiMVector ZH3l_XLepton,
+        #                                                             bool AZH_ok, // WH3l_isOk
+        #                                                             int nJetLoose_ //nJetLoose
+        # ){
+        
+        # }
+        # """)
+        
+
+        #         'AZH_mA_minus_mH': (["F"], {}),
+        #         'AZH_Amass':  (["F"], {}),
+        #         'AZH_Hmass' : (["F"], {}),
+        #         'AZH_ChiSquare' : (["F"], {}),
 
         df = df.DropColumns("_WH3l_isOk")
         df = df.DropColumns("_isOk3l")
