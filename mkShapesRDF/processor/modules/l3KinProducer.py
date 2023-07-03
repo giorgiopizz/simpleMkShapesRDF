@@ -72,18 +72,18 @@ class l3KinProducer(Module):
             if (leptons_vector.size() < 3) return minmllDiffToZ;
             for (uint i = 0; i < 3; i++){
                 for (uint j = i+1; j < 3; j++){
-                    if ( abs(leptons_pdgId[i])/leptons_pdgId[i] != abs(leptons_pdgId[j])/leptons_pdgId[j] ) continue;
-                    minmllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876 );
+                    if ( leptons_pdgId[i] + leptons_pdgId[j] != 0 ) continue;
+                    mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876 );
                     if ( mllDiffToZ < minmllDiffToZ ) minmllDiffToZ = mllDiffToZ;
                 }
             }
-        return minmllDiffToZ;
+            return minmllDiffToZ;
         }
         """)
 
         df = df.Define(
             prefix + "WH3l_ZVeto",
-            "_WH3l_isOk ? Get_minmllDiffToZ(Lepton_4DV, Lepton_pdgId) : -9999.0",
+            "_WH3l_isOk ? Get_minmllDiffToZ(Lepton_4DV, Lepton_pdgId) : 9999.0",
         )
 
         ROOT.gInterpreter.Declare("""
@@ -91,10 +91,10 @@ class l3KinProducer(Module):
             if (leptons_pdgId.size() < 3) return false;
             for (uint i = 0; i < 3; i++){
                 for (uint j = i+1; j < 3; j++){
-                    if ( abs(leptons_pdgId[i])/leptons_pdgId[i] == abs(leptons_pdgId[j])/leptons_pdgId[j] ) return true;
+                    if ( leptons_pdgId[i] + leptons_pdgId[j] == 0 ) return true;
                 }
             }
-        return false;
+            return false;
         }
         """)
 
@@ -168,7 +168,7 @@ class l3KinProducer(Module):
             for (uint i = 0; i < 3; i++){
                 for (uint j = i+1; j < 3; j++){
                     if (leptons_pdgId[i]*leptons_pdgId[j] < 0)
-                        drOSll_vector.push_back( DeltaR(leptons_vector[i].Eta(),leptons_vector[i].Phi(),leptons_vector[j].Eta(),leptons_vector[j].Phi() ) );
+                        drOSll_vector.push_back( DeltaR(leptons_vector[i].Eta(),leptons_vector[j].Eta(), leptons_vector[i].Phi(),leptons_vector[j].Phi() ) );
                     else
                         drOSll_vector.push_back(-9999.0);
                 }
@@ -194,7 +194,7 @@ class l3KinProducer(Module):
                         ptOSll_vector.push_back(-9999.0);
                 }
             }
-        return ptOSll_vector;
+            return ptOSll_vector;
         }
         """)
         df = df.Define(
@@ -228,7 +228,7 @@ class l3KinProducer(Module):
 
         df = df.Define(
             prefix + "WH3l_dphilllmet",
-            "_WH3l_isOk ? DeltaPhi( (Lepton_4DV[0] + Lepton_4DV[1] + Lepton_4DV[2]).Phi(), MET_4DV.Phi()) : -9999.0", 
+            "_WH3l_isOk ? abs(DeltaPhi( (Lepton_4DV[0] + Lepton_4DV[1] + Lepton_4DV[2]).Phi(), MET_4DV.Phi() )) : -9999.0", 
         )
 
         df = df.Define(
@@ -239,16 +239,16 @@ class l3KinProducer(Module):
 
         ROOT.gInterpreter.Declare("""
         float Get_ptW(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> leptons_vector, ROOT::RVecF leptons_pdgId){
-            float dR = 9999.0;
             float mindR = 9999.0;
             float ptW = -9999.0;
             ROOT::RVecF ptOSll_vector;
             if (leptons_vector.size() < 3) return -9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i+1; j < 3; j++){
-                    for (uint k = j+1; k < 3; k++){
+                for (uint j = 0; j < 3; j++){
+                    for (uint k = 0; k < 3; k++){
+                        if (i == j || i == k || j == k) continue;
                         if (leptons_pdgId[i]*leptons_pdgId[j] < 0){
-                            dR = DeltaR(leptons_vector[i].Eta(),leptons_vector[i].Phi(),leptons_vector[j].Eta(),leptons_vector[j].Phi());
+                            float dR = DeltaR(leptons_vector[i].Eta(),leptons_vector[j].Eta(), leptons_vector[i].Phi(),leptons_vector[j].Phi());
                             if (dR < mindR) {
                                 mindR = dR;
                                 ptW = leptons_vector[k].Pt();
@@ -257,7 +257,7 @@ class l3KinProducer(Module):
                     }
                 }
             }
-        return ptW;
+            return ptW;
         }
         """)
         df = df.Define(
@@ -780,7 +780,7 @@ class l3KinProducer(Module):
                     }
                 }
             }
-        return {WJet1_best_onebjet, WJet2_best_onebjet, bJetHadronic_best_onebjet, bJetLeptonic_best_onebjet, AZH_Neutrino_best_onebjet};
+            return {WJet1_best_onebjet, WJet2_best_onebjet, bJetHadronic_best_onebjet, bJetLeptonic_best_onebjet, AZH_Neutrino_best_onebjet};
         }
         """)
         df = df.Define(
