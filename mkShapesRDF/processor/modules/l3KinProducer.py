@@ -45,7 +45,7 @@ class l3KinProducer(Module):
 
         df = df.Define(
             "_WH3l_isOk",
-            "(abs( Sum( abs(Lepton_pdgId)/Lepton_pdgId ) ) <= 1) && l3_isOk",
+            "l3_isOk ? abs( abs(Lepton_pdgId[0])/Lepton_pdgId[0] + abs(Lepton_pdgId[1])/Lepton_pdgId[1] + abs(Lepton_pdgId[2])/Lepton_pdgId[2] ) <= 1 : false",
             excludeVariations=["JES*", "MET*"],
         )
 
@@ -56,11 +56,6 @@ class l3KinProducer(Module):
 
         # Variables yet to be implemented:
         ##############################
-
-        #         'AZH_mA_minus_mH': (["F"], {}),
-        #         'AZH_Amass':  (["F"], {}),
-        #         'AZH_Hmass' : (["F"], {}),
-        #         'AZH_ChiSquare' : (["F"], {}),
 
         # Variables definitions
         prefix = "new_fw_"
@@ -76,7 +71,7 @@ class l3KinProducer(Module):
             float mllDiffToZ    = 9999.0;
             if (leptons_vector.size() < 3) return minmllDiffToZ;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
+                for (uint j = i+1; j < 3; j++){
                     if ( abs(leptons_pdgId[i])/leptons_pdgId[i] != abs(leptons_pdgId[j])/leptons_pdgId[j] ) continue;
                     minmllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876 );
                     if ( mllDiffToZ < minmllDiffToZ ) minmllDiffToZ = mllDiffToZ;
@@ -95,7 +90,7 @@ class l3KinProducer(Module):
         bool Compare_charge(ROOT::RVecF leptons_pdgId){
             if (leptons_pdgId.size() < 3) return false;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
+                for (uint j = i+1; j < 3; j++){
                     if ( abs(leptons_pdgId[i])/leptons_pdgId[i] == abs(leptons_pdgId[j])/leptons_pdgId[j] ) return true;
                 }
             }
@@ -150,7 +145,7 @@ class l3KinProducer(Module):
             ROOT::RVecF mOSll_vector;
             if (leptons_vector.size() < 3) return ROOT::RVecF(3, -9999.0);
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
+                for (uint j = i+1; j < 3; j++){
                     if (leptons_pdgId[i]*leptons_pdgId[j] < 0)
                         mOSll_vector.push_back( (leptons_vector[i]+leptons_vector[j]).M() );
                     else
@@ -171,7 +166,7 @@ class l3KinProducer(Module):
             ROOT::RVecF drOSll_vector;
             if (leptons_vector.size() < 3) return ROOT::RVecF(3, -9999.0);
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
+                for (uint j = i+1; j < 3; j++){
                     if (leptons_pdgId[i]*leptons_pdgId[j] < 0)
                         drOSll_vector.push_back( DeltaR(leptons_vector[i].Eta(),leptons_vector[i].Phi(),leptons_vector[j].Eta(),leptons_vector[j].Phi() ) );
                     else
@@ -192,7 +187,7 @@ class l3KinProducer(Module):
             ROOT::RVecF ptOSll_vector;
             if (leptons_vector.size() < 3) return ROOT::RVecF(3, -9999.0);
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
+                for (uint j = i+1; j < 3; j++){
                     if (leptons_pdgId[i]*leptons_pdgId[j] < 0)
                         ptOSll_vector.push_back( (leptons_vector[i]+leptons_vector[j]).Pt() );
                     else
@@ -250,8 +245,8 @@ class l3KinProducer(Module):
             ROOT::RVecF ptOSll_vector;
             if (leptons_vector.size() < 3) return -9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if (leptons_pdgId[i]*leptons_pdgId[j] < 0){
                             dR = DeltaR(leptons_vector[i].Eta(),leptons_vector[i].Phi(),leptons_vector[j].Eta(),leptons_vector[j].Phi());
                             if (dR < mindR) {
@@ -282,10 +277,10 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return ZH3l_XLepton;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1 ; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
-                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
+                            float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876 );
                             if (mllDiffToZ < minmllDiffToZ){
                                 ZH3l_XLepton = leptons_vector[k];
                                 // float pTZ = (leptons_vector[i] + leptons_vector[j]).Pt();
@@ -321,8 +316,8 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return Zlepton1;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
                             float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
                             if (mllDiffToZ < minmllDiffToZ){
@@ -353,8 +348,8 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return Zlepton2;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
                             float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
                             if (mllDiffToZ < minmllDiffToZ){
@@ -384,8 +379,8 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return output_pdgId;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
                             float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
                             if (mllDiffToZ < minmllDiffToZ){
@@ -466,8 +461,8 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return pTZ;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
                             float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
                             if (mllDiffToZ < minmllDiffToZ){
@@ -494,8 +489,8 @@ class l3KinProducer(Module):
             if (WH3l_isOk == false) return checkZmass;
             float minmllDiffToZ = 9999.0;
             for (uint i = 0; i < 3; i++){
-                for (uint j = i; j < 3; j++){
-                    for (uint k = j; k < 3; k++){
+                for (uint j = i+1; j < 3; j++){
+                    for (uint k = j+1; k < 3; k++){
                         if ( abs(leptons_pdgId[i])/leptons_pdgId[i] + abs(leptons_pdgId[j])/leptons_pdgId[j] == 0 ){
                             float mllDiffToZ = abs( (leptons_vector[i] + leptons_vector[j]).M() - 91.1876);
                             if (mllDiffToZ < minmllDiffToZ){
@@ -816,6 +811,7 @@ class l3KinProducer(Module):
 
 
         df = df.DropColumns("_WH3l_isOk")
+        df = df.DropColumns("_ZH3l_isOk")
         df = df.DropColumns("_isOk3l")
         df = df.DropColumns("l3_isOk")
 
@@ -830,6 +826,8 @@ class l3KinProducer(Module):
 
         df = df.DropColumns("AZH_bJet_4vecId")
         df = df.DropColumns("ZH3l_XLepton")
+        df = df.DropColumns("ZLepton1")
+        df = df.DropColumns("ZLepton2")
 
         df = df.DropColumns("AZH_Neutrino_best")
         df = df.DropColumns("bJetLeptonic_best")
