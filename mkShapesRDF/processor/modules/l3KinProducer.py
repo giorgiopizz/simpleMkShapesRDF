@@ -480,7 +480,7 @@ class l3KinProducer(Module):
                             checkZmass = (leptons_vector[i] + leptons_vector[j]).M();
                             minmllDiffToZ = mllDiffToZ;
                         }
-                OB    }
+                    }
                 }
             }
             return checkZmass;
@@ -540,25 +540,51 @@ class l3KinProducer(Module):
 
         df = df.Define(
             "A",
-            "_ZH3l_isOk ? (pow(Zeta,2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2) > 0 ? sqrt((pow(Zeta,2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2)) : 0 : -9999",
+            "_ZH3l_isOk ? (pow(Zeta, 2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2) > 0 ? \
+                     sqrt((pow(Zeta, 2) * pow(ZH3l_XLepton.Pz(), 2)) / pow(ZH3l_XLepton.Pt(), 4) - (pow(MET_4DV.Pt(), 2) * pow(ZH3l_XLepton.E(), 2) - pow(Zeta, 2)) / pow(ZH3l_XLepton.Pt(), 2)) : \
+                     0 : -9999",
+        )
+
+        df = df.Define(
+            "Pznu1",
+            "_ZH3l_isOk ? ((Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2)) + A : -9999",
+
+        )
+
+        df = df.Define(
+            "Pznu2",
+            "_ZH3l_isOk ? ((Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2)) - A : -9999",
+
+        )
+
+        df = df.Define(
+            "Enu1",
+            "_ZH3l_isOk ? sqrt(pow(MET_4DV.Pt(), 2) + pow(Pznu1, 2)) : -9999",
+
+        )
+
+        df = df.Define(
+            "Enu2",
+            "_ZH3l_isOk ? sqrt(pow(MET_4DV.Pt(), 2) + pow(Pznu2, 2)) : -9999",
+
         )
 
         df = df.Define(
             "AZH_Neutrino1",
-            "_ZH3l_isOk ? ROOT::Math::PtEtaPhiMVector( MET_4DV.Px(), \
-                                                       MET_4DV.Py(), \
-                                                       ((Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2)) + A, \
-                                                       sqrt( pow(MET_4DV.Pt(), 2) + pow( (Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2) + A, 2) ) ) \
-                                                       : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+            "_ZH3l_isOk ? ROOT::Math::PxPyPzEVector( MET_4DV.Px(), \
+                                                     MET_4DV.Py(), \
+                                                     Pznu1, \
+                                                     Enu1 ) \
+                                                     : ROOT::Math::PxPyPzEVector(0., 0., 0., 0.)",
         )
 
         df = df.Define(
             "AZH_Neutrino2",
-            "_ZH3l_isOk ? ROOT::Math::PtEtaPhiMVector( MET_4DV.Px(), \
-                                                       MET_4DV.Py(), \
-                                                       ((Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2)) - A, \
-                                                       sqrt( pow(MET_4DV.Pt(), 2) + pow( (Zeta * ZH3l_XLepton.Pz()) / pow(ZH3l_XLepton.Pt(), 2) - A, 2) ) ) \
-                                                       : ROOT::Math::PtEtaPhiMVector(0., 0., 0., 0.)",
+            "_ZH3l_isOk ? ROOT::Math::PxPyPzEVector( MET_4DV.Px(), \
+                                                     MET_4DV.Py(), \
+                                                     Pznu2, \
+                                                     Enu2 ) \
+                                                     : ROOT::Math::PxPyPzEVector(0., 0., 0., 0.)",
         )
 
         # df = df.Define(
@@ -598,8 +624,8 @@ class l3KinProducer(Module):
         ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_AZH_var_2bjet(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
                                                                           ROOT::RVecF jet_btag,
                                                                           ROOT::RVecF jet_idx,
-                                                                          ROOT::Math::PtEtaPhiMVector Neutrino1,
-                                                                          ROOT::Math::PtEtaPhiMVector Neutrino2,
+                                                                          ROOT::Math::PxPyPzEVector Neutrino1,
+                                                                          ROOT::Math::PxPyPzEVector Neutrino2,
                                                                           ROOT::Math::PtEtaPhiMVector XLepton,
                                                                           ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> AZH_bJet_4vecId_
         ){
@@ -607,7 +633,7 @@ class l3KinProducer(Module):
             float sigmahadronic = 37.73;
             float TopMassLeptonic_true = 168.7;
             float TopMassHadronic_true = 163;
-            ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Neutrinos;
+            ROOT::VecOps::RVec<ROOT::Math::PxPyPzEVector> Neutrinos;
             Neutrinos.push_back(Neutrino1);
             Neutrinos.push_back(Neutrino2);
             ROOT::Math::PtEtaPhiMVector WJet1_best;
@@ -700,16 +726,15 @@ class l3KinProducer(Module):
 
         df = df.Define(
             prefix + "AZH_Topleptonic",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (bJetLeptonic_best + ZH3l_XLepton + bJetLeptonic_best).M() : -9999.0",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? (ZH3l_XLepton + AZH_Neutrino_best + bJetLeptonic_best).M() : -9999.0",
         )
-
 
         ROOT.gInterpreter.Declare("""
         ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Get_AZH_var_1bjet(ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> jets_vector,
                                                                           ROOT::RVecF jet_btag,
                                                                           ROOT::RVecF jet_idx,
-                                                                          ROOT::Math::PtEtaPhiMVector Neutrino1,
-                                                                          ROOT::Math::PtEtaPhiMVector Neutrino2,
+                                                                          ROOT::Math::PxPyPzEVector Neutrino1,
+                                                                          ROOT::Math::PxPyPzEVector Neutrino2,
                                                                           ROOT::Math::PtEtaPhiMVector XLepton,
                                                                           ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> AZH_bJet_4vecId_
         ){
@@ -717,7 +742,7 @@ class l3KinProducer(Module):
             float sigmahadronic = 37.73;
             float TopMassLeptonic_true = 168.7;
             float TopMassHadronic_true = 163;
-            ROOT::VecOps::RVec<ROOT::Math::PtEtaPhiMVector> Neutrinos;
+            ROOT::VecOps::RVec<ROOT::Math::PxPyPzEVector> Neutrinos;
             Neutrinos.push_back(Neutrino1);
             Neutrinos.push_back(Neutrino2);
             ROOT::Math::PtEtaPhiMVector WJet1_best_onebjet;
