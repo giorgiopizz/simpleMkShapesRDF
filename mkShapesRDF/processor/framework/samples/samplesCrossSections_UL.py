@@ -43,3 +43,4 @@ xs_db["EWKZ2Jets_ZToLL_M-50_MJJ-120_herwig7_angular"] = [
     "kfact=1.000",
     "ref=N",
 ]
+xs_db["ZZTo4L"] = ["xsec=1.325", "kfact=1.000", "ref=E"]
