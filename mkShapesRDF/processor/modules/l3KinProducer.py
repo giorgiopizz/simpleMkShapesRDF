@@ -21,7 +21,14 @@ class l3KinProducer(Module):
             "(CleanJet_pt, CleanJet_eta, CleanJet_phi,"
             # "Take(Jet_mass, CleanJet_jetIdx))",
             "CleanJet_mass)",
+            # "ROOT::RVecF(CleanJet_pt.size(), 0))",
         )
+
+        # df = df.Define(
+        #     "CleanJet_4DV_AZH",
+        #     "ROOT::VecOps::Construct<ROOT::Math::PtEtaPhiMVector>"
+        #     "(CleanJet_pt, CleanJet_eta, CleanJet_phi, ROOT::RVecF(CleanJet_pt.size(), 0))",
+        # )
 
         df = df.Define(
             "MET_4DV", "ROOT::Math::PtEtaPhiMVector" "(PuppiMET_pt, 0, PuppiMET_phi, 0)"
@@ -603,6 +610,7 @@ class l3KinProducer(Module):
                 if (jets_vector[i].Pt() > 30 && abs(jets_vector[i].Eta()) < 4.7){ 
                     if (jet_btag[jet_idx[i]] > 0.4941){ 
                         output_AZH_bJet_4vecId.push_back(jets_vector[i]);
+                       // output_AZH_bJet_4vecId.push_back(bjet);
                     }
                 }
             }
@@ -684,25 +692,52 @@ class l3KinProducer(Module):
         }
         """)
         df = df.Define(
+            "AZH_var_2bjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId) \
+            : ROOT::VecOps::Construct<ROOT::Math::PtEtaPhiMVector>(ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0))",
+        )
+        df = df.Define(
             "WJet1_best",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? AZH_var_2bjet[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "WJet2_best",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? AZH_var_2bjet[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "bJetHadronic_best",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? AZH_var_2bjet[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "bJetLeptonic_best",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? AZH_var_2bjet[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "AZH_Neutrino_best",
-            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? AZH_var_2bjet[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
+
+
+        # df = df.Define(
+        #     "WJet1_best",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "WJet2_best",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "bJetHadronic_best",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "bJetLeptonic_best",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "AZH_Neutrino_best",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_2bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
 
         df = df.Define(
             prefix + "AZH_mA_minus_mH",
@@ -797,25 +832,52 @@ class l3KinProducer(Module):
         }
         """)
         df = df.Define(
+            "AZH_var_1bjet",
+            "_ZH3l_isOk && nJet >= 4 && nbJet >=2 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId) \
+            : ROOT::VecOps::Construct<ROOT::Math::PtEtaPhiMVector>(ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0), ROOT::RVecF(1, 0))",
+        )
+
+        df = df.Define(
             "WJet1_best_onebjet",
-            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? AZH_var_1bjet[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "WJet2_best_onebjet",
-            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? AZH_var_1bjet[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "bJetHadronic_best_onebjet",
-            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? AZH_var_1bjet[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "bJetLeptonic_best_onebjet",
-            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? AZH_var_1bjet[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
         df = df.Define(
             "AZH_Neutrino_best_onebjet",
-            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+            "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? AZH_var_1bjet[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
         )
+
+        # df = df.Define(
+        #     "WJet1_best_onebjet",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[0] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "WJet2_best_onebjet",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[1] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "bJetHadronic_best_onebjet",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[2] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "bJetLeptonic_best_onebjet",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[3] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
+        # df = df.Define(
+        #     "AZH_Neutrino_best_onebjet",
+        #     "_ZH3l_isOk && nJet >= 4 && nbJet == 1 ? Get_AZH_var_1bjet(CleanJet_4DV, Jet_btagDeepB, CleanJet_jetIdx, AZH_Neutrino1, AZH_Neutrino2, ZH3l_XLepton, AZH_bJet_4vecId)[4] : ROOT::Math::PtEtaPhiMVector(0.,0.,0.,0.)",
+        # )
 
         df = df.Define(
             prefix + "AZH_mA_minus_mH_onebjet",
@@ -836,6 +898,7 @@ class l3KinProducer(Module):
         df = df.DropColumns("CleanJet_4DV")
         df = df.DropColumns("MET_4DV")
         df = df.DropColumns("TkMET_4DV")
+        # df = df.DropColumns("CleanJet_4DV_AZH")
 
         df = df.DropColumns("AZH_bJet_4vecId")
         df = df.DropColumns("ZH3l_XLepton")
@@ -847,6 +910,9 @@ class l3KinProducer(Module):
         df = df.DropColumns("bJetHadronic_best")
         df = df.DropColumns("WJet1_best")
         df = df.DropColumns("WJet2_best")
+
+        df = df.DropColumns("AZH_var_1bjet")
+        df = df.DropColumns("AZH_var_2bjet")
 
         df = df.DropColumns("AZH_Neutrino_best_onebjet")
         df = df.DropColumns("bJetLeptonic_best_onebjet")
