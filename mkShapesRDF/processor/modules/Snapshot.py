@@ -1,4 +1,5 @@
 import ROOT
+import uproot
 from fnmatch import fnmatch
 from mkShapesRDF.processor.framework.module import Module
 import sys
@@ -73,26 +74,35 @@ class Snapshot(Module):
 
         """
         # copy other information from inputFiles into the outputfile
-        mergedOutput = f"merged_{outputFilename}"
 
-        proc = subprocess.Popen(
-            f'hadd -fk {mergedOutput} {" ".join(inputFiles)}',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        print(out.decode("utf-8"))
-        print(err.decode("utf-8"), file=sys.stderr)
+        
+        if len(inputFiles)>1:
+            mergedOutput = f"merged_{outputFilename}"
+            
+            proc = subprocess.Popen(
+                f'hadd -fk {mergedOutput} {" ".join(inputFiles)}',
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            out, err = proc.communicate()
+            print(out.decode("utf-8"))
+            print(err.decode("utf-8"), file=sys.stderr)
+        else:
+            mergedOutput = inputFiles[0]
 
         f = ROOT.TFile.Open(mergedOutput)
         f2 = ROOT.TFile(outputFilename, "UPDATE")
 
         trees = [k.GetName() for k in f.GetListOfKeys()]
-        trees = list(set(trees).difference(set(["Events"])))
+	    trees = list(set(trees).difference(set(["Events"])))
+
         f2.cd()
         for key in trees:
-            f.Get(key).Write()
+            if "tag" in key:
+                f.Get(key).Clone().Write()
+            else:
+                f.Get(key).CloneTree().Write()
         f2.Close()
         f.Close()
 
@@ -105,7 +115,7 @@ class Snapshot(Module):
         out, err = proc.communicate()
         print(out.decode("utf-8"))
         print(err.decode("utf-8"), file=sys.stderr)
-
+        
     def SplitVariations(self, df):
         """
         Create a Snapshot object for each variation and tag.
