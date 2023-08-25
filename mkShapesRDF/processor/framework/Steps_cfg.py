@@ -56,7 +56,7 @@ Steps = {
             "l2Kin",
             "l3Kin",
             "l4Kin",
-            "formulasMC2018v9",
+            "formulasMC2017v9",
             "finalSnapshot_JES_17",
         ],
         "outputFolder": "MCl1loose2017v9__MCCorr2017v9NoJERInHorn__l2tightOR2017v9__RDF",
@@ -259,7 +259,7 @@ Steps = {
         "do4MC": True,
         "do4Data": False,
         "import": "mkShapesRDF.processor.modules.JMECalculator",
-        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V6_MC", "Summer19UL17_JRV2_MC", \
+        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V5_MC", "Summer19UL17_JRV2_MC", \
             jet_object="AK4PFchs", do_Jets=True, do_MET=True, do_Unclustered=False, met_collections = ["PuppiMET", "MET", "RawMET"],\
             do_JER=False, store_nominal=False, store_variations=True)',
         "module": "jmeCalculator()",
@@ -297,6 +297,14 @@ Steps = {
         "import": "mkShapesRDF.processor.modules.l4KinProducer",
         "declare": "l4Kin = lambda : l4KinProducer()",
         "module": "l4Kin()",
+    },
+    "formulasMC2017v9": {
+        "isChain": False,
+        "do4MC": True,
+        "do4Data": False,
+        "import": "mkShapesRDF.processor.modules.GenericFormulaAdder",
+        "declare": "formulasMC2017v9 = lambda : GenericFormulaAdder(pathToConfigFile='RPLME_FW/processor/data/formulasToAdd_MC_Full2017v9.py')",
+        "module": "formulasMC2017v9()",
     },
     "formulasMC2018v9": {
         "isChain": False,

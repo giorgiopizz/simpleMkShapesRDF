@@ -8,6 +8,140 @@ LepFilter_dict = {
 }
 
 ElectronWP = {
+    "Full2017v9": {
+        "VetoObjWP": {
+            "HLTsafe": {
+                "cuts": {
+                    # Common cuts
+                    "True": ["False"],
+                },
+            },
+        },
+  
+        # ------------
+        "FakeObjWP": {
+            "HLTsafe": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Electron_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Electron_eta) < 2.5",
+                        "Electron_cutBased >= 3",
+                        "Electron_convVeto == 1",
+                    ],
+                    # Barrel
+                    "ROOT::VecOps::abs(Electron_eta)  <= 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.05",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.1",
+                    ],
+                    # EndCap
+                    "ROOT::VecOps::abs(Electron_eta)  > 1.479": [
+                        "Electron_sieie  < 0.03",
+                        "ROOT::VecOps::abs(Electron_eInvMinusPInv) < 0.014",
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.1",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.2",
+                    ],
+                },
+            },
+        },
+
+ 
+        "TightObjWP": {
+            # TODO this section is missing SF files
+            # ----- mvaFall17V2Iso
+            "mvaFall17V2Iso_WP90": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Electron_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Electron_eta) < 2.5",
+                        "Electron_mvaFall17V2Iso_WP90",
+                        "Electron_convVeto == 1",
+                        "Electron_pfRelIso03_all < 0.06",
+                    ],
+                    # Barrel
+                    "ROOT::VecOps::abs(Electron_eta) <= 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.05",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.1",
+                    ],
+                    # EndCap
+                    "ROOT::VecOps::abs(Electron_eta) > 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.1",
+                        "ROOT::VecOps::abs(Electron_dz) <  0.2",
+                    ],
+                }
+            },
+            # ----- mvaFall17V2Iso + ttHMVA
+            "mvaFall17V2Iso_WP90_tthmva_70": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Electron_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Electron_eta) < 2.5",
+                        "Electron_mvaFall17V2Iso_WP90",
+                        "Electron_convVeto == 1",
+                        "Electron_pfRelIso03_all < 0.06",
+                        "Electron_mvaTTH > 0.7",
+                    ],
+                    # Barrel
+                    "ROOT::VecOps::abs(Electron_eta) <= 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.05",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.1",
+                    ],
+                    # EndCap
+                    "ROOT::VecOps::abs(Electron_eta) > 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.1",
+                        "ROOT::VecOps::abs(Electron_dz) <  0.2",
+                    ],
+                }
+            },
+            # ----- mvaFall17V2Iso + SS
+            "mvaFall17V2Iso_WP90_SS": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Electron_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Electron_eta) < 2.5",
+                        "Electron_mvaFall17V2Iso_WP90",
+                        "Electron_convVeto == 1",
+                        "Electron_pfRelIso03_all < 0.06",
+                        "Electron_tightCharge == 2",
+                    ],
+                    # Barrel
+                    "ROOT::VecOps::abs(Electron_eta) <= 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.05",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.1",
+                    ],
+                    # EndCap
+                    "ROOT::VecOps::abs(Electron_eta) > 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.1",
+                        "ROOT::VecOps::abs(Electron_dz) <  0.2",
+                    ],
+                }
+            },
+            # ----- mvaFall17V2Iso + SS + ttHMVA
+            "mvaFall17V2Iso_WP90_SS_tthmva_70": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Electron_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Electron_eta) < 2.5",
+                        "Electron_mvaFall17V2Iso_WP90",
+                        "Electron_convVeto == 1",
+                        "Electron_pfRelIso03_all < 0.06",
+                        "Electron_tightCharge == 2",
+                        "Electron_mvaTTH > 0.7",
+                    ],
+                    # Barrel
+                    "ROOT::VecOps::abs(Electron_eta) <= 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.05",
+                        "ROOT::VecOps::abs(Electron_dz)  < 0.1",
+                    ],
+                    # EndCap
+                    "ROOT::VecOps::abs(Electron_eta) > 1.479": [
+                        "ROOT::VecOps::abs(Electron_dxy) < 0.1",
+                        "ROOT::VecOps::abs(Electron_dz) <  0.2",
+                    ],
+                }
+            }
+        },
+    },
+
     "Full2018v9": {
         "VetoObjWP": {
             "HLTsafe": {
@@ -70,6 +204,87 @@ ElectronWP = {
 }
 
 MuonWP = {
+    # ____________________Full2017v9__________________________
+    "Full2017v9": {
+        # ------------
+        "VetoObjWP": {
+            "HLTsafe": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Muon_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Muon_eta) < 2.4",
+                        "Muon_pt > 10.0",
+                    ]
+                },
+            }
+        },
+        # ------------
+        "FakeObjWP": {
+            "HLTsafe": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Muon_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Muon_eta) < 2.4",
+                        "Muon_tightId == 1",
+                        "ROOT::VecOps::abs(Muon_dz) < 0.1",
+                        "Muon_pfRelIso04_all < 0.4",
+                    ],
+                    # dxy for pT < 20 GeV
+                    "Muon_pt <= 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.01",
+                    ],
+                    # dxy for pT > 20 GeV
+                    "Muon_pt > 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.02",
+                    ],
+                },
+            },
+        },
+        # ------------
+        # TODO this section is missing SF files
+        "TightObjWP": {
+            "cut_Tight_HWWW": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Muon_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Muon_eta) < 2.4",
+                        "Muon_tightId == 1",
+                        "ROOT::VecOps::abs(Muon_dz) < 0.1",
+                        "Muon_pfRelIso04_all < 0.15",
+                    ],
+                    # dxy for pT < 20 GeV
+                    "Muon_pt <= 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.01",
+                    ],
+                    # dxy for pT > 20 GeV
+                    "Muon_pt > 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.02",
+                    ],
+                },
+            },
+            "cut_Tight_HWWW_tthmva_80": {
+                "cuts": {
+                    # Common cuts
+                    "ROOT::RVecB (Muon_pt.size(), true)": [
+                        "ROOT::VecOps::abs(Muon_eta) < 2.4",
+                        "Muon_tightId == 1",
+                        "ROOT::VecOps::abs(Muon_dz) < 0.1",
+                        "Muon_pfRelIso04_all < 0.15",
+                        "Muon_mvaTTH > 0.8",
+                    ],
+                    # dxy for pT < 20 GeV
+                    "Muon_pt <= 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.01",
+                    ],
+                    # dxy for pT > 20 GeV
+                    "Muon_pt > 20.0": [
+                        "ROOT::VecOps::abs(Muon_dxy) < 0.02",
+                    ],
+                },
+            }
+        }
+    },
+
     # ____________________Full2018v9__________________________
     "Full2018v9": {
         # ------------
