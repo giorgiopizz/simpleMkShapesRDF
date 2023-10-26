@@ -31,7 +31,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_16",
         ],
-        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDFfix",
+        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDF",
     },
     "JES_16noHIPM": {
         "isChain": True,
@@ -45,7 +45,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_16",
         ],
-        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDFfix",
+        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDF",
     },
     "JES_17": {
         "isChain": True,
@@ -59,7 +59,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_17",
         ],
-        "outputFolder": "MCl1loose2017v9__MCCorr2017v9NoJERInHorn__l2tightOR2017v9__RDFfix",
+        "outputFolder": "MCl1loose2017v9__MCCorr2017v9NoJERInHorn__l2tightOR2017v9__RDF",
     },
     "JES_18": {
         "isChain": True,
@@ -73,7 +73,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_18",
         ],
-        "outputFolder": "MCl1loose2018v9__MCCorr2018v9NoJERInHorn__l2tightOR2018v9__RDFfix",
+        "outputFolder": "MCl1loose2018v9__MCCorr2018v9NoJERInHorn__l2tightOR2018v9__RDF",
     },
     "MCl1loose2018v9": {
         "isChain": True,
