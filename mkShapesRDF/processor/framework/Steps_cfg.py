@@ -31,7 +31,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_16",
         ],
-        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDF",
+        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDFfix",
     },
     "JES_16noHIPM": {
         "isChain": True,
@@ -45,7 +45,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_16",
         ],
-        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDF",
+        "outputFolder": "MCl1loose2016v9__MCCorr2016v9NoJERInHorn__l2tightOR2016v9__RDFfix",
     },
     "JES_17": {
         "isChain": True,
@@ -59,7 +59,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_17",
         ],
-        "outputFolder": "MCl1loose2017v9__MCCorr2017v9NoJERInHorn__l2tightOR2017v9__RDF",
+        "outputFolder": "MCl1loose2017v9__MCCorr2017v9NoJERInHorn__l2tightOR2017v9__RDFfix",
     },
     "JES_18": {
         "isChain": True,
@@ -73,7 +73,7 @@ Steps = {
             "formulasMC2018v9",
             "finalSnapshot_JES_18",
         ],
-        "outputFolder": "MCl1loose2018v9__MCCorr2018v9NoJERInHorn__l2tightOR2018v9__RDF",
+        "outputFolder": "MCl1loose2018v9__MCCorr2018v9NoJERInHorn__l2tightOR2018v9__RDFfix",
     },
     "MCl1loose2018v9": {
         "isChain": True,
@@ -259,7 +259,7 @@ Steps = {
         "do4MC": True,
         "do4Data": False,
         "import": "mkShapesRDF.processor.modules.JMECalculator",
-        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V6_MC", "Summer19UL17_JRV2_MC", \
+        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V5_MC", "Summer19UL17_JRV2_MC", \
             jet_object="AK4PFchs", do_Jets=True, do_MET=True, do_Unclustered=False, met_collections = ["PuppiMET", "MET", "RawMET"],\
             do_JER=False, store_nominal=False, store_variations=True)',
         "module": "jmeCalculator()",
