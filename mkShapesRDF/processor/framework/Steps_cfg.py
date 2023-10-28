@@ -259,7 +259,7 @@ Steps = {
         "do4MC": True,
         "do4Data": False,
         "import": "mkShapesRDF.processor.modules.JMECalculator",
-        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V6_MC", "Summer19UL17_JRV2_MC", \
+        "declare": 'jmeCalculator = lambda : JMECalculator("Summer19UL17_V5_MC", "Summer19UL17_JRV2_MC", \
             jet_object="AK4PFchs", do_Jets=True, do_MET=True, do_Unclustered=False, met_collections = ["PuppiMET", "MET", "RawMET"],\
             do_JER=False, store_nominal=False, store_variations=True)',
         "module": "jmeCalculator()",
