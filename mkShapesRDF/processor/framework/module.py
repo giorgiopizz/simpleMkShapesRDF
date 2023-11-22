@@ -63,9 +63,14 @@ class Module:
                 bVal = bVal[0]
             if "list" in str(type(aVal)):
                 aVal = aVal[0]
+            bVal = bVal.GetValue()
+            aVal = aVal.GetValue()
+            if abs(aVal) < 1e-6:
+                bVal = 1.0
+                aVal = 1.0
             return [
                 f"Efficiency of {self.name} module",
-                str(round(bVal.GetValue() / aVal.GetValue() * 100, 3)) + "%",
+                str(round(bVal / aVal * 100, 3)) + "%",
             ]
 
         values.append([fun, a, b])

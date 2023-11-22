@@ -15,6 +15,7 @@ cat << EOF > start.sh
 #!/bin/bash
 $sourceCommand
 source `pwd`/myenv/bin/activate
+export PYTHONPATH=`pwd`/myenv/lib64/python3.9/site-packages:\$PYTHONPATH
 EOF
 
 chmod +x start.sh

@@ -14,6 +14,17 @@ float Alt(container c, int index, float alt){
     }
 }
 
+template
+<typename T>
+T Alt(RVec<T> c, int index, T alt){
+    if (index < c.size()) {
+        return c[index];
+    }
+    else{
+        return alt;
+    }
+}
+
 RVec<double> LogVec(RVec<double> vec){
     RVec<double> out; 
     for(auto const & el : vec){

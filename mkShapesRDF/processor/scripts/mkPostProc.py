@@ -5,6 +5,7 @@ from sys import argv
 import glob
 import subprocess
 import tabulate
+from fnmatch import fnmatch
 
 #: condorDir is the path to use for condor submission, user might want to change it -> edit ``mkPostProc.py``
 condorDir = (
@@ -12,7 +13,8 @@ condorDir = (
 )
 
 #: eosDir is the path to use for eos submission, user might want to change it -> edit ``mkPostProc.py``
-eosDir = "/eos/cms/store/group/phys_smp/Latinos/vbfz/mkShapesRDF_nanoAOD"
+# eosDir = "/eos/cms/store/group/phys_smp/Latinos/vbfz/mkShapesRDF_nanoAOD" # just for tests
+eosDir = "/eos/cms/store/group/phys_higgs/cmshww/amassiro/HWWNano"
 
 #: defaultRedirector is the redirector used to access files if the option ``--useRedirector 1`` is used, user might want to change it -> edit ``mkPostProc.py``
 defaultRedirector = "root://cms-xrd-global.cern.ch/"
@@ -134,6 +136,24 @@ def operationMode1Parser(parser=None):
     parser1 = argparse.ArgumentParser(parents=[parser])
 
     parser1.add_argument(
+        "-T",
+        "--selTree",
+        type=str,
+        help="List of samples to select, comma separated",
+        required=False,
+        default="",
+    )
+
+    parser1.add_argument(
+        "-E",
+        "--excTree",
+        type=str,
+        help="List of samples to exclude, comma separated",
+        required=False,
+        default="",
+    )
+
+    parser1.add_argument(
         "-r",
         "--resubmit",
         type=int,
@@ -162,7 +182,6 @@ def main():
     if opMode == 0:
         parser0 = operationMode0Parser(parser)
         args = parser0.parse_args()
-
         selTree = args.selTree
         excTree = args.excTree
 
@@ -207,20 +226,53 @@ def main():
         parser1 = operationMode1Parser(parser)
         args = parser1.parse_args()
         resubmit = args.resubmit
+
+        selTree = args.selTree
+        excTree = args.excTree
+
+        if selTree == "":
+            selTree = []
+        else:
+            selTree = [s.strip() for s in selTree.split(",")]
+
+        if excTree == "":
+            excTree = []
+        else:
+            excTree = [s.strip() for s in excTree.split(",")]
+
         print("Should check for errors")
 
         folder = condorDir + "/" + prodName + "/" + step + "/"
 
         folder = os.path.abspath(folder)
+        errs = []
+        files = []
 
-        errs = glob.glob(f"{folder}/*/err.txt")
-        files = glob.glob(f"{folder}/*/script.py")
+        if len(selTree) == 0:
+            errs.extend(glob.glob(f"{folder}/*/err.txt"))
+            files.extend(glob.glob(f"{folder}/*/script.py"))
+
+        for tree in selTree:
+            errs.extend(glob.glob(f"{folder}/{tree}__part*/err.txt"))
+            files.extend(glob.glob(f"{folder}/{tree}__part*/script.py"))
+
+        for tree in excTree:
+            errs = list(
+                filter(
+                    lambda k: not fnmatch(k, f"{folder}/{tree}__part*/err.txt"), errs
+                )
+            )
+            files = list(
+                filter(
+                    lambda k: not fnmatch(k, f"{folder}/{tree}__part*/script.py"), files
+                )
+            )
 
         errsD = list(map(lambda k: "/".join(k.split("/")[:-1]), errs))
         filesD = list(map(lambda k: "/".join(k.split("/")[:-1]), files))
         # print(files)
         notFinished = list(set(filesD).difference(set(errsD)))
-        print(notFinished)
+        print("Waiting for\n", "\n".join(notFinished), sep="")
         tabulated = []
         tabulated.append(["Total jobs", "Finished jobs", "Running jobs"])
         tabulated.append([len(files), len(errs), len(notFinished)])
@@ -233,6 +285,11 @@ def main():
         Warning in <TClass::Init>: no dictionary for class edm::Hash<1> is available
         Warning in <TClass::Init>: no dictionary for class pair<edm::Hash<1>,edm::ParameterSetBlob> is available
         Warning in <TInterpreter::ReadRootmapFile>: class  podio::
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::Hash<1> is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ProcessHistory is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ProcessConfiguration is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ParameterSetBlob is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class pair<edm::Hash<1>,edm::ParameterSetBlob> is available
         real
         user
         sys
@@ -260,14 +317,15 @@ def main():
             txt = lines.split("\n")
             # txt = list(filter(lambda k: k not in normalErrs, txt))
             txt = list(filter(lambda k: not normalErrsF(k), txt))
-            txt = list(filter(lambda k: k.strip() != "", txt))
+            txt = list(filter(lambda k: k != "", txt))
             if len(txt) > 0:
                 print("Found unusual error in")
                 print(err)
-                print("\n")
-                # print("\n".join(txt))
+                print("\nFirst 5 lines of error file:")
+                print("\n".join(txt[:5]))
                 print("\n\n")
                 toResubmit.append(err)
+
         toResubmit = list(map(lambda k: "".join(k.split("/")[-2]), toResubmit))
         print(toResubmit)
         if len(toResubmit) > 0:
