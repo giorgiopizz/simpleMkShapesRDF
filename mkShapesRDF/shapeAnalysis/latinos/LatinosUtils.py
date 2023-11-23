@@ -38,7 +38,7 @@ def flatten_cuts(cuts):
 
 def update_variables_with_categories(variables, categoriesmap):
     # variables can have "cuts" specifications
-    for variable in variables.items():
+    for variable in variables.values():
         if "cuts" not in variable:
             continue
 
@@ -60,7 +60,7 @@ def update_variables_with_categories(variables, categoriesmap):
 
 
 def update_nuisances_with_subsamples(nuisances, subsamplesmap):
-    for nuisance in nuisances.items():
+    for nuisance in nuisances.values():
         if "samples" not in nuisance:
             continue
 

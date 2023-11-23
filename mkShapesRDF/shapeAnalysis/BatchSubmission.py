@@ -111,9 +111,9 @@ class BatchSubmission:
         for sample in self.samples:
             self.createBatch(sample)
 
-    def submit(self, dryRun=0, queue='workday'):
+    def submit(self, dryRun=0, queue="workday"):
         txtsh = ""
-        with open(os.environ['STARTPATH']) as file:
+        with open(os.environ["STARTPATH"]) as file:
             txtsh += file.read()
 
         mE = self.d.get("mountEOS", [])

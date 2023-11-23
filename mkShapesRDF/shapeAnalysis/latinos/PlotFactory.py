@@ -8,21 +8,12 @@ from array import array
 from collections import OrderedDict
 import math
 import numpy as np
+from fnmatch import fnmatch
 
 import re
 
 ROOT.gROOT.SetBatch(True)
-
-
-def hist2array(h, overflow=False, copy=True):
-    shift = 0
-    if overflow:
-        shift = 1
-    d = []
-    for i in range(1 - shift, h.GetNbinsX() + 1 + shift):
-        d.append(h.GetBinContent(i))
-    d = np.array(d)
-    return d
+from mkShapesRDF.shapeAnalysis.utils import hist2array
 
 
 def np_array(_TArrayD):
@@ -311,17 +302,17 @@ class PlotFactory:
                         continue
 
                     shapeName = cutName + "/" + variableName + "/histo_" + sampleName
-                    print("     -> shapeName = ", shapeName)
+                    # print("     -> shapeName = ", shapeName)
                     if type(fileIn) is dict:
                         histo = fileIn[sampleName].Get(shapeName)
                     else:
                         histo = fileIn.Get(shapeName)
                     if not histo:
                         continue
-                    print(" --> ", histo)
-                    print(
-                        "new_histo_" + sampleName + "_" + cutName + "_" + variableName
-                    )
+                    # print(" --> ", histo)
+                    # print(
+                    #    "new_histo_" + sampleName + "_" + cutName + "_" + variableName
+                    # )
                     histos[sampleName] = histo.Clone(
                         "new_histo_" + sampleName + "_" + cutName + "_" + variableName
                     )
@@ -574,7 +565,8 @@ class PlotFactory:
                             ):  # 'stat' has a separate treatment, it's the MC/data statistics
                                 # print(" nuisance = ", nuisance)
                                 if "samples" in nuisance.keys():
-                                    if sampleName in nuisance["samples"].keys():
+                                    # if sampleName in nuisance["samples"].keys():
+                                    if len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))>0:
                                         # print(" stat nuisances for ", sampleName)
                                         if (
                                             nuisance["samples"][sampleName]["typeStat"]
@@ -625,7 +617,8 @@ class PlotFactory:
                         for nuisanceName, nuisance in mynuisances.items():
                             # is this nuisance to be considered for this background?
                             if "samples" in nuisance:
-                                if sampleName not in nuisance["samples"]:
+                                # if sampleName not in nuisance["samples"]:
+                                if len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))==0:
                                     continue
                             elif "all" not in nuisance or nuisance["all"] != 1:
                                 continue
@@ -660,7 +653,7 @@ class PlotFactory:
 
                             if "type" in nuisance and nuisance["type"] == "lnN":
                                 if "samples" in nuisance:
-                                    values = nuisance["samples"][sampleName]
+                                    values = nuisance['samples'].get(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys()))[0], 1.00)
                                     # example:
                                     #              'samples'  : {
                                     #                   'WW' : '1.00',
@@ -672,7 +665,10 @@ class PlotFactory:
                                 if "/" in values:
                                     variations = map(float, values.split("/"))
                                 else:
-                                    variations = (float(values), 2.0 - float(values))
+                                    if float(values) < 1e-8:
+                                        print("lnN cannot be zero! Check nuisance", nuisacen, file=sys.stderr)
+                                        sys.exit(1)
+                                    variations = (float(values), 1.0 / float(values))
 
                                 # don't use  histos[sampleName], or the second "scale" will fail!!!
                                 for ivar, shapeNameVar in enumerate(shapeNameVars):
@@ -692,9 +688,9 @@ class PlotFactory:
 
                                     if histoVar is not None:
                                         nuisanceHistos[ivar][nuisanceName] = histoVar
-                                        if np.isnan(
-                                            hist2array(histoVar, copy=False)
-                                        ).any():
+                                        try:
+                                            histoVar.Integral()
+                                        except:
                                             print(
                                                 "Warning, lost nuisance, containing NaN ",
                                                 nuisanceName,
@@ -708,6 +704,7 @@ class PlotFactory:
                                                 + "/histo_"
                                                 + sampleName
                                             )
+
                                     elif not self._SkipMissingNuisance:
                                         print(
                                             " This is bad, the nuisance ",
@@ -845,8 +842,9 @@ class PlotFactory:
                         )
                     #              nuisances_err2_up = rnp.array(last.GetSumw2())[1:-1]
                     #              nuisances_err2_do = rnp.array(last.GetSumw2())[1:-1]
-                    nuisances_err2_up = np_array(last.GetSumw2())[1:-1]
-                    nuisances_err2_do = np_array(last.GetSumw2())[1:-1]
+                    _, nuisances_err2_up = hist2array(last, include_sumw2=True)
+                    _, nuisances_err2_do = hist2array(last, include_sumw2=True)
+                    # nuisances_err2_do = np_array(last.GetSumw2())[1:-1]
                     if self._removeMCStat:
                         nuisances_err2_up.fill(0)
                         nuisances_err2_do.fill(0)
@@ -1133,7 +1131,7 @@ class PlotFactory:
 
                 if variable["divideByBinWidth"] == 1 and histo_total is not None:
                     histo_total.Scale(1, "width")
-                print("--> histo_total = ", histo_total)
+                # print("--> histo_total = ", histo_total)
 
                 #                                  if there is "histo_total" there is no need of explicit nuisances
                 if (
@@ -1326,17 +1324,17 @@ class PlotFactory:
                                 samplesToRatio.GetBinContent(iBin + 1),
                             ),
                         )
-                        if variableName == "events":
-                            print(
-                                " >> ratio[",
-                                cutName,
-                                "][",
-                                samplesToRatioName,
-                                "]  = ",
-                                self.Ratio(
-                                    tgrData_vy[0], samplesToRatio.GetBinContent(0 + 1)
-                                ),
-                            )
+                        # if variableName == "events":
+                        #     print(
+                        #         " >> ratio[",
+                        #         cutName,
+                        #         "][",
+                        #         samplesToRatioName,
+                        #         "]  = ",
+                        #         self.Ratio(
+                        #             tgrData_vy[0], samplesToRatio.GetBinContent(0 + 1)
+                        #         ),
+                        #     )
 
                     tgrDataOverMCTemp.SetLineColor(samplesToRatio.GetLineColor())
                     tgrDataOverMCTemp.SetMarkerColor(samplesToRatio.GetLineColor())
@@ -1367,18 +1365,18 @@ class PlotFactory:
                             tgrData_evy_do[iBin],
                             tgrData_evy_up[iBin],
                         )
-                        if variableName == "events":
-                            print(
-                                " >> difference[",
-                                cutName,
-                                "][",
-                                samplesToDifferenceName,
-                                "]  = ",
-                                self.Difference(
-                                    tgrData_vy[0],
-                                    samplesToDifference.GetBinContent(0 + 1),
-                                ),
-                            )
+                        # if variableName == "events":
+                        #     print(
+                        #         " >> difference[",
+                        #         cutName,
+                        #         "][",
+                        #         samplesToDifferenceName,
+                        #         "]  = ",
+                        #         self.Difference(
+                        #             tgrData_vy[0],
+                        #             samplesToDifference.GetBinContent(0 + 1),
+                        #         ),
+                        #     )
 
                     tgrDataMinusMCTemp.SetLineColor(samplesToDifference.GetLineColor())
                     tgrDataMinusMCTemp.SetMarkerColor(
@@ -1401,10 +1399,10 @@ class PlotFactory:
                         continue
 
                     if sampleConfiguration["isSignal"] == 1:
-                        print(
-                            "############################################################## isSignal 1",
-                            sampleNameGroup,
-                        )
+                        # print(
+                        #     "############################################################## isSignal 1",
+                        #     sampleNameGroup,
+                        # )
                         #
                         # if, for some reason, you want to scale only the overlaid signal
                         # for example to show the shape of the signal, without affecting the actual stacked (true) distribution
@@ -1419,10 +1417,10 @@ class PlotFactory:
                         else:
                             thsSignal_grouped.Add(histos_grouped[sampleNameGroup])
                     elif sampleConfiguration["isSignal"] == 2:
-                        print(
-                            "############################################################## isSignal 2",
-                            sampleNameGroup,
-                        )
+                        # print(
+                        #     "############################################################## isSignal 2",
+                        #     sampleNameGroup,
+                        # )
                         groupFlag = True
                         sigSupList_grouped.append(histos_grouped[sampleNameGroup])
                     # the signal is added on top of the background
@@ -1433,17 +1431,17 @@ class PlotFactory:
 
                 # ---- now plot
 
-                if thsBackground.GetNhists() != 0:
-                    print(" MC   = ", thsBackground.GetStack().Last().Integral())
-                    for ihisto in range(thsBackground.GetNhists()):
-                        print(
-                            "     - ",
-                            ihisto,
-                            " - ",
-                            ((thsBackground.GetHists().At(ihisto))).GetName(),
-                            " = ",
-                            ((thsBackground.GetHists().At(ihisto))).Integral(),
-                        )
+                # if thsBackground.GetNhists() != 0:
+                #     print(" MC   = ", thsBackground.GetStack().Last().Integral())
+                #     for ihisto in range(thsBackground.GetNhists()):
+                #         print(
+                #             "     - ",
+                #             ihisto,
+                #             " - ",
+                #             ((thsBackground.GetHists().At(ihisto))).GetName(),
+                #             " = ",
+                #             ((thsBackground.GetHists().At(ihisto))).Integral(),
+                #         )
 
                 if thsData.GetNhists() != 0:
                     print(" DATA = ", thsData.GetStack().Last().Integral())
