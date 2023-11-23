@@ -21,6 +21,7 @@ ROOT.gROOT.SetBatch(True)
 
 headersPath = os.path.dirname(os.path.dirname(__file__)) + "/include/headers.hh"
 ROOT.gInterpreter.Declare(f'#include "{headersPath}"')
+from mkShapesRDF.shapeAnalysis.utils import hist2array
 
 
 def defaultParser():
@@ -102,6 +103,21 @@ def defaultParser():
         required=False,
         default="0",
     )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        choices=[
+            "espresso",
+            "microcentury",
+            "longlunch",
+            "workday",
+            "tomorrow",
+            "testmatch",
+        ],
+        help="Condor queue",
+        required=False,
+        default="workday",
+    )
     return parser
 
 
@@ -113,6 +129,7 @@ def main():
     operationMode = args.operationMode
     doBatch = int(args.doBatch)
     dryRun = int(args.dryRun)
+    queue = args.queue
     global folder
     folder = os.path.abspath(args.folder)
     configsFolder = os.path.abspath(args.folder + "/" + args.configsFolder)
@@ -227,7 +244,7 @@ def main():
                 batchVars,
             )
             batch.createBatches()
-            batch.submit(dryRun)
+            batch.submit(dryRun, queue)
 
         else:
             print("#" * 20, "\n\n", " Running on local machine  ", "\n\n", "#" * 20)
@@ -255,7 +272,6 @@ def main():
 
         errsD = list(map(lambda k: "/".join(k.split("/")[:-1]), errs))
         filesD = list(map(lambda k: "/".join(k.split("/")[:-1]), files))
-        # print(files)
         notFinished = list(set(filesD).difference(set(errsD)))
         print(notFinished)
         tabulated = []
@@ -264,7 +280,6 @@ def main():
         import tabulate
 
         print(tabulate.tabulate(tabulated))
-        # print('queue 1 Folder in ' + ' '.join(list(map(lambda k: k.split('/')[-1], notFinished))))
         normalErrs = """Warning in <TClass::Init>: no dictionary for class edm::ProcessHistory is available
         Warning in <TClass::Init>: no dictionary for class edm::ProcessConfiguration is available
         Warning in <TClass::Init>: no dictionary for class edm::ParameterSetBlob is available
@@ -279,6 +294,14 @@ def main():
         Warning in <Snapshot>: A lazy Snapshot action was booked but never triggered.
         cling::DynamicLibraryManager::loadLibrary(): libOpenGL.so.0: cannot open shared object file: No such file or directory
         Error in <AutoloadLibraryMU>: Failed to load library /cvmfs/sft.cern.ch/lcg/releases/ROOT/6.28.00
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::Hash<1> is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ParameterSetBlob is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ProcessHistory is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class edm::ProcessConfiguration is available
+        TClass::Init:0: RuntimeWarning: no dictionary for class pair<edm::Hash<1>,edm::ParameterSetBlob> is available         
+        cling::DynamicLibraryManager::loadLibrary(): libGLU.so.1: cannot open shared object file: No such file or directory
+        Error in <TNetXNGFile::Close>:
+        Warning in <TChain::AddFile>: Adding tree with no entries from file
         """
         normalErrs = normalErrs.split("\n")
         normalErrs = list(map(lambda k: k.strip(" ").strip("\t"), normalErrs))
@@ -319,7 +342,9 @@ def main():
             if resubmit == 1:
                 from mkShapesRDF.shapeAnalysis.BatchSubmission import BatchSubmission
 
-                BatchSubmission.resubmitJobs(batchFolder, tag, toResubmit, dryRun)
+                BatchSubmission.resubmitJobs(
+                    batchFolder, tag, toResubmit, dryRun, queue
+                )
 
         if resubmit == 2:
             # resubmit all the jobs that are not finished
@@ -327,7 +352,7 @@ def main():
             print(toResubmit)
             from mkShapesRDF.shapeAnalysis.BatchSubmission import BatchSubmission
 
-            BatchSubmission.resubmitJobs(batchFolder, tag, toResubmit, dryRun)
+            BatchSubmission.resubmitJobs(batchFolder, tag, toResubmit, dryRun, queue)
 
     elif operationMode == 2:
         print(
@@ -352,11 +377,115 @@ def main():
         print("\n\n", filesToMerge, "\n\n")
 
         print(f"Hadding files into {folder}/{outputFolder}/{outputFile}")
+        with open(f"filesToMerge_{outputFile}.txt", "w") as file:
+            file.write("\n".join(filesToMerge))
         process = subprocess.Popen(
-            f'hadd -j {folder}/{outputFolder}/{outputFile} {" ".join(filesToMerge)}',
+            f"hadd2 -j 10 {folder}/{outputFolder}/{outputFile} @filesToMerge_{outputFile}.txt; \
+            rm filesToMerge_{outputFile}.txt",
             shell=True,
         )
         process.wait()
+        if process.returncode == 0:
+            print("Hadd was successful")
+            import mkShapesRDF.shapeAnalysis.latinos.LatinosUtils as utils
+
+            f = ROOT.TFile.Open(f"{outputFolder}/{outputFile}", "update")
+            # post process -> nuisance envelops and RMS
+            cuts = cuts["cuts"]
+            categoriesmap = utils.flatten_cuts(cuts)
+            subsamplesmap = utils.flatten_samples(samples)
+            utils.update_variables_with_categories(variables, categoriesmap)
+            utils.update_nuisances_with_subsamples(nuisances, subsamplesmap)
+            utils.update_nuisances_with_categories(nuisances, categoriesmap)
+            for nuisance in nuisances.keys():
+                if not (
+                    nuisances[nuisance].get("kind", "").endswith("envelope")
+                    or nuisances[nuisance].get("kind", "").endswith("rms")
+                ):
+                    continue
+                print("Work for ", nuisance)
+                _cuts = list(cuts.keys())
+                _samples = list(samples.keys())
+                for cut in _cuts:
+                    for variable in variables.keys():
+                        f.cd(f"/{cut}/{variable}")
+                        print("work in ", cut, variable)
+                        histos = [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]
+                        for sampleName in _samples:
+                            limitSamples = nuisances[nuisance].get("samples", {})
+                            if not (
+                                len(limitSamples) == 0
+                                or sampleName in limitSamples.keys()
+                            ):
+                                # print(f'{sampleName} does not have nuisance {nuisance}')
+                                continue
+                            histosNameToProcess = list(
+                                filter(
+                                    lambda k: k.startswith(
+                                        f"histo_{sampleName}_{nuisances[nuisance]['name']}_SPECIAL_NUIS"
+                                    ),
+                                    histos,
+                                )
+                            )
+                            histosToProcess = list(
+                                map(
+                                    lambda k: ROOT.gDirectory.Get(k).Clone(),
+                                    histosNameToProcess,
+                                )
+                            )
+                            if len(histosToProcess) == 0:
+                                print(
+                                    f'No variations found for {sampleName} in {cut}/{variable} for nuisance {nuisances[nuisance]["name"]}',
+                                    file=sys.stderr,
+                                )
+                                continue
+
+                                sys.exit(1)
+                            hNominal = ROOT.gDirectory.Get(
+                                f"histo_{sampleName}"
+                            ).Clone()
+
+                            hName = f"histo_{sampleName}_{nuisances[nuisance]['name']}"
+                            h_up = histosToProcess[0].Clone()
+                            h_do = histosToProcess[0].Clone()
+                            variations = np.empty(
+                                (
+                                    len(histosToProcess),
+                                    histosToProcess[0].GetNbinsX() + 2,
+                                ),
+                                dtype=float,
+                            )
+                            for i in range(len(histosToProcess)):
+                                variations[i, :] = hist2array(
+                                    histosToProcess[i], flow=True
+                                )
+                            arrup = 0
+                            arrdo = 0
+                            if nuisances[nuisance]["kind"].endswith("envelope"):
+                                arrup = np.max(variations, axis=0)
+                                arrdo = np.min(variations, axis=0)
+                            elif nuisances[nuisance]["kind"].endswith("rms"):
+                                vnominal = hist2array(hNominal, flow=True)
+                                arrnom = np.tile(vnominal, (variations.shape[0], 1))
+                                arrv = np.sqrt(
+                                    np.mean(np.square(variations - arrnom), axis=0)
+                                )
+                                arrup = vnominal + arrv
+                                arrdo = vnominal - arrv
+                            else:
+                                continue
+
+                            for i in range(0, h_up.GetNbinsX() + 2):
+                                h_up.SetBinContent(i, arrup[i])
+                                h_do.SetBinContent(i, arrdo[i])
+                            print(hName)
+                            h_up.SetName(hName + "Up")
+                            h_up.Write()
+                            h_do.SetName(hName + "Down")
+                            h_do.Write()
+                            for histo in histosNameToProcess:
+                                ROOT.gDirectory.Delete(f"{histo};*")
+            f.Close()
 
     else:
         print("Operating mode was set to -1, nothing was done")

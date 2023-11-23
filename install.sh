@@ -11,14 +11,28 @@ python -m pip install -e .[docs,dev]
 
 python -m pip install --no-binary=correctionlib correctionlib
 
+
+cd utils
+mkdir -p bin
+
+cd src && c++ hadd.cxx -o hadd2 $(root-config --cflags --libs) && cd .. && mv src/hadd2 bin/hadd2
+
+if [ $? -ne 0 ]; then
+      echo "Failed compiling hadd"
+      exit 1
+fi
+cd ..
+
 cat << EOF > start.sh
 #!/bin/bash
 $sourceCommand
 source `pwd`/myenv/bin/activate
+export STARTPATH=`pwd`/start.sh
+export PYTHONPATH=`pwd`/myenv/lib64/python3.9/site-packages:\$PYTHONPATH
+export PATH=`pwd`/utils/bin:\$PATH
 EOF
 
 chmod +x start.sh
-
 
 wget https://gpizzati.web.cern.ch/mkShapesRDF/jsonpog-integration.tar.gz
 tar -xzvf jsonpog-integration.tar.gz

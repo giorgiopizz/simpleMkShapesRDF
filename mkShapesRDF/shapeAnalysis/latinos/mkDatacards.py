@@ -7,6 +7,7 @@ import optparse
 import collections
 import os.path
 import shutil
+from fnmatch import fnmatch
 
 
 ROOT.gROOT.SetBatch(True)
@@ -25,6 +26,8 @@ class DatacardFactory:
     def __init__(self):
         self._fileIn = None
         self._skipMissingNuisance = False
+        self.onlyVariable = None
+        self.onlyCut = None
 
     # _____________________________________________________________________________
     # a datacard for each "cut" and each "variable" will be produced, in separate sub-folders, names after "cut/variable"
@@ -97,6 +100,7 @@ class DatacardFactory:
 
         # loop over cuts. One directory per cut will be created
         for cutName in cuts:
+            if self.onlyCut and self.onlyCut != cutName: continue
             print("cut = ", cutName)
             try:
                 shutil.rmtree(outputDirDatacard + "/" + cutName)
@@ -130,6 +134,7 @@ class DatacardFactory:
             for variableName, variable in variables.items():
                 if "cuts" in variable and cutName not in variable["cuts"]:
                     continue
+                if self.onlyVariable and self.onlyVariable != variableName: continue
 
                 print("  variableName = ", variableName)
                 tagNameToAppearInDatacard = cutName
@@ -428,7 +433,8 @@ class DatacardFactory:
                                         "all" in nuisance and nuisance["all"] == 1
                                     ) or (
                                         "samples" in nuisance
-                                        and sampleName in nuisance["samples"]
+                                        # and sampleName in nuisance["samples"]
+                                        and len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))>0
                                     ):
                                         histo = self._getHisto(
                                             cutName, variableName, sampleName
@@ -523,12 +529,13 @@ class DatacardFactory:
                                 else:
                                     # apply only to selected samples
                                     for sampleName in processes:
-                                        if sampleName in nuisance["samples"]:
+                                        # if sampleName in nuisance["samples"]:
+                                        if len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))>0:
                                             # in this case nuisance['samples'] is a dict mapping sample name to nuisance values in string
                                             card.write(
                                                 (
                                                     "%s"
-                                                    % nuisance["samples"][sampleName]
+                                                    % nuisance["samples"][list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys()))[0]]
                                                 ).ljust(columndef)
                                             )
                                         else:
@@ -584,7 +591,7 @@ class DatacardFactory:
                                         "all" in nuisance and nuisance["all"] == 1
                                     ) or (
                                         "samples" in nuisance
-                                        and sampleName in nuisance["samples"]
+                                        and len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))>0
                                     ):
                                         histo = self._getHisto(
                                             cutName, variableName, sampleName
@@ -715,7 +722,7 @@ class DatacardFactory:
                                         "all" in nuisance and nuisance["all"] == 1
                                     ) or (
                                         "samples" in nuisance
-                                        and sampleName in nuisance["samples"]
+                                        and len(list(filter(lambda k: fnmatch(sampleName, k), nuisance["samples"].keys())))>0
                                     ):
                                         # save the nuisance histograms in the root file
                                         if ("skipCMS" in nuisance.keys()) and nuisance[
@@ -1045,7 +1052,8 @@ class DatacardFactory:
             #                 sys.exit()
             if suffix:
                 print("Getting the nominal instead of varied")
-                return self._getHisto(cutName, variableName, sampleName)
+                histo = self._getHisto(cutName, variableName, sampleName)
+                histo.SetName(shapeName)
 
         return histo
 
@@ -1137,6 +1145,19 @@ def main():
         default=False,
         action="store_true",
     )
+    parser.add_option(
+        "--onlyVariable",
+        dest="onlyVariable",
+        help="draw only one variable (may be needed in post-fit plots)",
+        default=None,
+    )
+    parser.add_option(
+        "--onlyCut",
+        dest="onlyCut",
+        help="draw only one cut phase space (may be needed in post-fit plots)",
+        default=None,
+    )
+
 
     # read default parsing options as well
     #    hwwtools.addOptions(parser)
@@ -1163,6 +1184,8 @@ def main():
     factory = DatacardFactory()
     factory._tag = tag
     factory._skipMissingNuisance = opt.skipMissingNuisance
+    factory.onlyCut = opt.onlyCut
+    factory.onlyVariable = opt.onlyVariable
 
     import mkShapesRDF.shapeAnalysis.latinos.LatinosUtils as utils
 

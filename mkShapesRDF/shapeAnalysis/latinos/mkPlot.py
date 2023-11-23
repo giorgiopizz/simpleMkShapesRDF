@@ -249,7 +249,7 @@ def main():
         dest="parallelPlotting",
         help="Plot each cut in parallel",
         action="store_true",
-        default=False,
+        default=True,
     )
 
     # read default parsing options as well
@@ -294,70 +294,16 @@ def main():
     opt.minLogCratio = float(opt.minLogCratio)
     opt.maxLogCratio = float(opt.maxLogCratio)
 
-    #    if not opt.debug:
-    #        pass
-    #    elif opt.debug == 2:
-    #        print 'Logging level set to DEBUG (%d)' % opt.debug
-    #        logging.basicConfig( level=logging.DEBUG )
-    #    elif opt.debug == 1:
-    #        print 'Logging level set to INFO (%d)' % opt.debug
-    #        logging.basicConfig( level=logging.INFO )
-
-    # samples = {}
-    # samples = OrderedDict()
-    #    if opt.samplesFile == None :
-    #      print " Please provide the samples structure (not strictly needed in mkPlot, since list of samples read from plot.py) "
-    #    elif os.path.exists(opt.samplesFile) :
-    #      # This line is needed for mkplot not to look for samples in eos.
-    #      # Imagine the samples have been removed in eos, but the file with histograms
-    #      # has been already generated, there is no need to check the existence of the samples on eos
-    #      # NB: in samples.py the function "nanoGetSampleFiles" must handle this, if needed
-    #      _samples_noload = True
-    #      handle = open(opt.samplesFile,'r')
-    #      exec(handle)
-    #      handle.close()
-
-    #    cuts = {}
-    #    if os.path.exists(opt.cutsFile) :
-    #      handle = open(opt.cutsFile,'r')
-    #      exec(handle)
-    #      handle.close()
-    #
-    #    variables = {}
-    #    if os.path.exists(opt.variablesFile) :
-    #      handle = open(opt.variablesFile,'r')
-    #      exec(handle)
-    #      handle.close()
-    #
-    #    nuisances = {}
-    #    if opt.nuisancesFile == None :
-    #      print " Please provide the nuisances structure if you want to add nuisances "
-    #    elif os.path.exists(opt.nuisancesFile) :
-    #      handle = open(opt.nuisancesFile,'r')
-    #      exec(handle)
-    #      handle.close()
 
     import mkShapesRDF.shapeAnalysis.latinos.LatinosUtils as utils
-
-    # import glob
-
-    # import json
-    # lFile = list(filter(lambda k: os.path.isfile(k), glob.glob('configs/*json')))
-    # lFile.sort(key= lambda x: os.path.getmtime(x))
-    # lFile = lFile[-1]
-    # with open(lFile) as file:
-    #     d = json.load(file)
-
     from mkShapesRDF.shapeAnalysis.ConfigLib import ConfigLib
 
     global plot
     global cuts
     configsFolder = "configs"
-    # ConfigLib.loadLatestJSON('configs', globals())
     ConfigLib.loadLatestPickle(os.path.abspath(configsFolder), globals())
-    # ConfigLib.loadDict(d, globals())
-    print(dir())
-    print(globals().keys())
+    # print(dir())
+    # print(globals().keys())
 
     cuts = cuts["cuts"]
     groupPlot = plot["groupPlot"]
@@ -378,7 +324,7 @@ def main():
 
     if opt.onlyVariable is not None:
         list_to_remove = []
-        for variableName, variable in variables.iteritems():
+        for variableName, variable in variables.items():
             if variableName != opt.onlyVariable:
                 list_to_remove.append(variableName)
         for toRemove in list_to_remove:
@@ -388,23 +334,16 @@ def main():
 
     if opt.onlyCut is not None:
         list_to_remove = []
-        for cutName, cutExtended in cuts.iteritems():
+        print(opt.onlyCut)
+        for cutName, cutExtended in cuts.items():
             if cutName not in opt.onlyCut:
+                print(cutName)
                 list_to_remove.append(cutName)
         for toRemove in list_to_remove:
             del cuts[toRemove]
 
         print(" cuts = ", cuts)
 
-    #    groupPlot = OrderedDict()
-    #    plot = {}
-    #    legend = {}
-    #    if os.path.exists(opt.plotFile) :
-    #      handle = open(opt.plotFile,'r')
-    #      exec(handle)
-    #      handle.close()
-    # energy = '13TeV'
-    # sys.exit()
     # =====================
     def launch_plot(
         inputFile,
@@ -419,7 +358,6 @@ def main():
     ):
         factory = PlotFactory()
         factory._tag = tag
-        # factory._energy    = opt.energy
         factory._lumi = lumi
         factory._plotNormalizedDistributions = opt.plotNormalizedDistributions
         factory._plotNormalizedIncludeData = opt.plotNormalizedIncludeData
@@ -477,7 +415,9 @@ def main():
     # ===============================
 
     if opt.parallelPlotting:
+        procs = []
         for cut in cuts:
+            print("\n\n Launching", cut)
             p = Process(
                 target=launch_plot(
                     inputFile,
@@ -491,7 +431,11 @@ def main():
                     groupPlot,
                 )
             )
+            procs.append(p)
             p.start()
+
+        for p in procs:
+            p.join()
     else:
         launch_plot(
             inputFile,
