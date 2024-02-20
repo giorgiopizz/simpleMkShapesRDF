@@ -21,7 +21,7 @@ def hist2array(h, flow=False, copy=True, include_sumw2=False):
     if flow:
         shift = 1
     vals = vals[shift : nx - shift]
-    sum2 = sumw2[shift : nx - shift]
+    sumw2 = sumw2[shift : nx - shift]
 
     if copy:
         vals = vals.copy()
