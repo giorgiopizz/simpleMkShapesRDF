@@ -16,6 +16,7 @@ import os
 import glob
 import subprocess
 import ROOT
+import numpy as np
 
 ROOT.gROOT.SetBatch(True)
 
@@ -131,6 +132,7 @@ def main():
     dryRun = int(args.dryRun)
     queue = args.queue
     global folder
+    global cuts # why do we need this?
     folder = os.path.abspath(args.folder)
     configsFolder = os.path.abspath(args.folder + "/" + args.configsFolder)
     configFile = args.configFile
@@ -199,11 +201,6 @@ def main():
     batchFolder = f"{folder}/{batchFolder}"
 
     Path(f"{folder}/{outputFolder}").mkdir(parents=True, exist_ok=True)
-
-    if operationMode == 2 and os.path.exists(f"{folder}/{outputFolder}/{outputFile}"):
-        print("Can't merge files, output already exists")
-        print(f"You can run: rm {folder}/{outputFolder}/{outputFile}")
-        sys.exit()
 
     limit = int(args.limitEvents)
 
@@ -355,6 +352,7 @@ def main():
             BatchSubmission.resubmitJobs(batchFolder, tag, toResubmit, dryRun, queue)
 
     elif operationMode == 2:
+
         print(
             "",
             "".join(["#" for _ in range(20)]),
@@ -363,129 +361,137 @@ def main():
             "\n\n",
             "".join(["#" for _ in range(20)]),
         )
-
-        _samples = RunAnalysis.splitSamples(samples)
-        print(len(_samples))
-        outputFileTrunc = ".".join(outputFile.split(".")[:-1])
-        filesToMerge = list(
-            map(
-                lambda k: f"{folder}/{outputFolder}/{outputFileTrunc}__ALL__{k[0]}_{str(k[3])}.root",
-                _samples,
+        if not os.path.exists(f"{folder}/{outputFolder}/{outputFile}"):
+            _samples = RunAnalysis.splitSamples(samples)
+            print(len(_samples))
+            outputFileTrunc = ".".join(outputFile.split(".")[:-1])
+            filesToMerge = list(
+                map(
+                    lambda k: f"{folder}/{outputFolder}/{outputFileTrunc}__ALL__{k[0]}_{str(k[3])}.root",
+                    _samples,
+                )
             )
-        )
-        print("\n\nMerging files\n\n")
-        print("\n\n", filesToMerge, "\n\n")
+            print("\n\nMerging files\n\n")
+            print("\n\n", filesToMerge, "\n\n")
 
-        print(f"Hadding files into {folder}/{outputFolder}/{outputFile}")
-        with open(f"filesToMerge_{outputFile}.txt", "w") as file:
-            file.write("\n".join(filesToMerge))
-        process = subprocess.Popen(
-            f"hadd2 -j 10 {folder}/{outputFolder}/{outputFile} @filesToMerge_{outputFile}.txt; \
-            rm filesToMerge_{outputFile}.txt",
-            shell=True,
-        )
-        process.wait()
-        if process.returncode == 0:
-            print("Hadd was successful")
-            import mkShapesRDF.shapeAnalysis.latinos.LatinosUtils as utils
+            print(f"Hadding files into {folder}/{outputFolder}/{outputFile}")
+            with open(f"filesToMerge_{outputFile}.txt", "w") as file:
+                file.write("\n".join(filesToMerge))
+            process = subprocess.Popen(
+                f"hadd2 -j 10 {folder}/{outputFolder}/{outputFile} @filesToMerge_{outputFile}.txt; \
+                rm filesToMerge_{outputFile}.txt",
+                shell=True,
+            )
+            process.wait()
+            if process.returncode != 0:
+                print("Hadd was not successful, check inputs")
+                sys.exit()
+            else:
+                print("Hadd was successful")
 
-            f = ROOT.TFile.Open(f"{outputFolder}/{outputFile}", "update")
-            # post process -> nuisance envelops and RMS
-            cuts = cuts["cuts"]
-            categoriesmap = utils.flatten_cuts(cuts)
-            subsamplesmap = utils.flatten_samples(samples)
-            utils.update_variables_with_categories(variables, categoriesmap)
-            utils.update_nuisances_with_subsamples(nuisances, subsamplesmap)
-            utils.update_nuisances_with_categories(nuisances, categoriesmap)
-            for nuisance in nuisances.keys():
-                if not (
-                    nuisances[nuisance].get("kind", "").endswith("envelope")
-                    or nuisances[nuisance].get("kind", "").endswith("rms")
-                ):
-                    continue
-                print("Work for ", nuisance)
-                _cuts = list(cuts.keys())
-                _samples = list(samples.keys())
-                for cut in _cuts:
-                    for variable in variables.keys():
-                        f.cd(f"/{cut}/{variable}")
-                        print("work in ", cut, variable)
-                        histos = [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]
-                        for sampleName in _samples:
-                            limitSamples = nuisances[nuisance].get("samples", {})
-                            if not (
-                                len(limitSamples) == 0
-                                or sampleName in limitSamples.keys()
-                            ):
-                                # print(f'{sampleName} does not have nuisance {nuisance}')
-                                continue
-                            histosNameToProcess = list(
-                                filter(
-                                    lambda k: k.startswith(
-                                        f"histo_{sampleName}_{nuisances[nuisance]['name']}_SPECIAL_NUIS"
-                                    ),
-                                    histos,
-                                )
-                            )
-                            histosToProcess = list(
-                                map(
-                                    lambda k: ROOT.gDirectory.Get(k).Clone(),
-                                    histosNameToProcess,
-                                )
-                            )
-                            if len(histosToProcess) == 0:
-                                print(
-                                    f'No variations found for {sampleName} in {cut}/{variable} for nuisance {nuisances[nuisance]["name"]}',
-                                    file=sys.stderr,
-                                )
-                                continue
+        else:
+            print("Can't merge files, output already exists")
 
-                                sys.exit(1)
-                            hNominal = ROOT.gDirectory.Get(
-                                f"histo_{sampleName}"
-                            ).Clone()
+        import mkShapesRDF.shapeAnalysis.latinos.LatinosUtils as utils
 
-                            hName = f"histo_{sampleName}_{nuisances[nuisance]['name']}"
-                            h_up = histosToProcess[0].Clone()
-                            h_do = histosToProcess[0].Clone()
-                            variations = np.empty(
-                                (
-                                    len(histosToProcess),
-                                    histosToProcess[0].GetNbinsX() + 2,
+        f = ROOT.TFile.Open(f"{outputFolder}/{outputFile}", "update")
+        # post process -> nuisance envelops and RMS
+        cuts = cuts["cuts"]
+        categoriesmap = utils.flatten_cuts(cuts)
+        subsamplesmap = utils.flatten_samples(samples)
+        utils.update_variables_with_categories(variables, categoriesmap)
+        utils.update_nuisances_with_subsamples(nuisances, subsamplesmap)
+        utils.update_nuisances_with_categories(nuisances, categoriesmap)
+        for nuisance in nuisances.keys():
+            if not (
+                nuisances[nuisance].get("kind", "").endswith("envelope")
+                or nuisances[nuisance].get("kind", "").endswith("rms")
+            ):
+                continue
+            print("Work for ", nuisance)
+            _cuts = list(cuts.keys())
+            _samples = list(samples.keys())
+            for cut in _cuts:
+                for variable in variables.keys():
+                    f.cd(f"/{cut}/{variable}")
+                    print("work in ", cut, variable)
+                    histos = [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]
+                    for sampleName in _samples:
+                        limitSamples = nuisances[nuisance].get("samples", {})
+                        if not (
+                            len(limitSamples) == 0
+                            or sampleName in limitSamples.keys()
+                        ):
+                            # print(f'{sampleName} does not have nuisance {nuisance}')
+                            continue
+                        histosNameToProcess = list(
+                            filter(
+                                lambda k: k.startswith(
+                                    f"histo_{sampleName}_{nuisances[nuisance]['name']}_SPECIAL_NUIS"
                                 ),
-                                dtype=float,
+                                histos,
                             )
-                            for i in range(len(histosToProcess)):
-                                variations[i, :] = hist2array(
-                                    histosToProcess[i], flow=True
-                                )
-                            arrup = 0
-                            arrdo = 0
-                            if nuisances[nuisance]["kind"].endswith("envelope"):
-                                arrup = np.max(variations, axis=0)
-                                arrdo = np.min(variations, axis=0)
-                            elif nuisances[nuisance]["kind"].endswith("rms"):
-                                vnominal = hist2array(hNominal, flow=True)
-                                arrnom = np.tile(vnominal, (variations.shape[0], 1))
-                                arrv = np.sqrt(
-                                    np.mean(np.square(variations - arrnom), axis=0)
-                                )
-                                arrup = vnominal + arrv
-                                arrdo = vnominal - arrv
-                            else:
-                                continue
+                        )
+                        histosToProcess = list(
+                            map(
+                                lambda k: ROOT.gDirectory.Get(k).Clone(),
+                                histosNameToProcess,
+                            )
+                        )
+                        if len(histosToProcess) == 0:
+                            print(
+                                f'No variations found for {sampleName} in {cut}/{variable} for nuisance {nuisances[nuisance]["name"]}',
+                                file=sys.stderr,
+                            )
+                            continue
 
-                            for i in range(0, h_up.GetNbinsX() + 2):
-                                h_up.SetBinContent(i, arrup[i])
-                                h_do.SetBinContent(i, arrdo[i])
-                            print(hName)
-                            h_up.SetName(hName + "Up")
-                            h_up.Write()
-                            h_do.SetName(hName + "Down")
-                            h_do.Write()
-                            for histo in histosNameToProcess:
-                                ROOT.gDirectory.Delete(f"{histo};*")
-            f.Close()
+                            sys.exit(1)
+                        hNominal = ROOT.gDirectory.Get(
+                            f"histo_{sampleName}"
+                        ).Clone()
+
+                        hName = f"histo_{sampleName}_{nuisances[nuisance]['name']}"
+                        h_up = histosToProcess[0].Clone()
+                        h_do = histosToProcess[0].Clone()
+                        variations = np.empty(
+                            (
+                                len(histosToProcess),
+                                histosToProcess[0].GetNbinsX() + 2,
+                            ),
+                            dtype=float,
+                        )
+                        for i in range(len(histosToProcess)):
+                            variations[i, :] = hist2array(
+                                histosToProcess[i], flow=False
+                            )
+                        arrup = 0
+                        arrdo = 0
+                        vnominal = hist2array(hNominal, flow=False)
+                        if nuisances[nuisance]["kind"].endswith("envelope"):
+                            arrup = np.max(variations, axis=0)
+                            arrdo = np.min(variations, axis=0)
+                        elif nuisances[nuisance]["kind"].endswith("rms"):
+                            vnominal = hist2array(hNominal, flow=True)
+                            arrnom = np.tile(vnominal, (variations.shape[0], 1))
+                            arrv = np.sqrt(
+                                np.mean(np.square(variations - arrnom), axis=0)
+                            )
+                            arrup = vnominal + arrv
+                            arrdo = vnominal - arrv
+                        else:
+                            continue
+
+                        for i in range(0, h_up.GetNbinsX() + 2):
+                            h_up.SetBinContent(i, arrup[i])
+                            h_do.SetBinContent(i, arrdo[i])
+                        print(hName)
+                        h_up.SetName(hName + "Up")
+                        h_up.Write()
+                        h_do.SetName(hName + "Down")
+                        h_do.Write()
+                        # for histo in histosNameToProcess:
+                        #     ROOT.gDirectory.Delete(f"{histo};*")
+        f.Close()
 
     else:
         print("Operating mode was set to -1, nothing was done")

@@ -1,4 +1,5 @@
 import numpy as np
+import ROOT
 
 
 def hist2array(h, flow=False, copy=True, include_sumw2=False):

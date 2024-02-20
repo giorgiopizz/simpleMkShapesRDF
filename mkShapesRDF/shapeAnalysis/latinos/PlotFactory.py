@@ -737,7 +737,7 @@ class PlotFactory:
                                 try:
                                     histoVar = nuisanceHistos[ivar][nuisanceName]
                                     # test = rnp.hist2array(histoVar, copy=False)
-                                    _ = hist2array(histoVar, copy=False)
+                                    _ = hist2array(histoVar, copy=False, flow=True)
                                 except KeyError:
                                     # now, even if not considered this nuisance, I need to add it,
                                     # so that in case is "empty" it will add the nominal value
@@ -764,7 +764,7 @@ class PlotFactory:
                                 except KeyError:
                                     # vy = nuisances_vy[nuisanceName] = np.zeros_like(rnp.hist2array(histo, copy=False))
                                     vy = nuisances_vy[nuisanceName] = np.zeros_like(
-                                        hist2array(histo, copy=False)
+                                        hist2array(histo, copy=False, flow=True)
                                     )
 
                                 # get the background sum
@@ -772,7 +772,7 @@ class PlotFactory:
                                     plotdef["isSignal"] == 0
                                 ):  # ---> add the signal too????? See ~ 20 lines below
                                     # vy += rnp.hist2array(histoVar, copy=False)
-                                    vy += hist2array(histoVar, copy=False)
+                                    vy += hist2array(histoVar, copy=False, flow=True)
                                     # print(sampleName, nuisanceName, rnp.hist2array(histoVar, copy=False))
 
                     # create the group of histograms to plot
@@ -830,7 +830,7 @@ class PlotFactory:
                 if thsBackground.GetNhists() != 0:
                     last = thsBackground.GetStack().Last()
                     # tgrMC_vy = rnp.hist2array(last, copy=True)
-                    tgrMC_vy = hist2array(last, copy=True)
+                    tgrMC_vy = hist2array(last, copy=True, flow=True)
                     for iBin in range(
                         1, thsBackground.GetStack().Last().GetNbinsX() + 1
                     ):
@@ -842,8 +842,8 @@ class PlotFactory:
                         )
                     #              nuisances_err2_up = rnp.array(last.GetSumw2())[1:-1]
                     #              nuisances_err2_do = rnp.array(last.GetSumw2())[1:-1]
-                    _, nuisances_err2_up = hist2array(last, include_sumw2=True)
-                    _, nuisances_err2_do = hist2array(last, include_sumw2=True)
+                    _, nuisances_err2_up = hist2array(last, include_sumw2=True, flow=True)
+                    _, nuisances_err2_do = hist2array(last, include_sumw2=True, flow=True)
                     # nuisances_err2_do = np_array(last.GetSumw2())[1:-1]
                     if self._removeMCStat:
                         nuisances_err2_up.fill(0)
