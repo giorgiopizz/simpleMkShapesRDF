@@ -8,11 +8,13 @@ def flatten_samples(samples):
 
         subsamplesmap.append((sname, []))
         for sub in sample["subsamples"]:
-            samples["%s_%s" % (sname, sub)] = sample
-            subsamplesmap[-1][1].append("%s_%s" % (sname, sub))
+            samples["%s" % (sub)] = sample
+            subsamplesmap[-1][1].append("%s" % (sub))
 
         sample.pop("subsamples")
         samples.pop(sname)
+
+    print(subsamplesmap)
 
     return subsamplesmap
 
