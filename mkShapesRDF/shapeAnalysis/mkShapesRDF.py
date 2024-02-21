@@ -214,9 +214,17 @@ def main():
         print("Runner file / path does not exist!")
         sys.exit()
 
+    if not runnerPath.endswith('.py'):
+        print(f'Warning, chosen runner {runnerPath} is not a python module')
+
     _results = {}
     sys.path.append(os.path.dirname(runnerPath))
-    from runner import RunAnalysis
+    runnerModule = __import__(runnerFile.strip('.py'))
+    if not hasattr(runnerModule, 'RunAnalysis'): 
+        raise AttributeError(f'Runner module {runnerFile} from {runnerPath} has no attribute RunAnalysis')
+    RunAnalysis = runnerModule.RunAnalysis
+ 
+    #from runner import RunAnalysis
 
     if operationMode == 0:
         print("#" * 20, "\n\n", "   Doing analysis", "\n\n", "#" * 20)
