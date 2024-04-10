@@ -675,7 +675,7 @@ class PlotFactory:
                                     else:
                                         histoVar = fileIn.Get(shapeNameVar)
 
-                                    if histoVar is not None:
+                                    if histoVar != None:
                                         nuisanceHistos[ivar][nuisanceName] = histoVar
                                         if np.isnan(
                                             rnp_hist2array(histoVar, copy=True)

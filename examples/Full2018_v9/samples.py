@@ -25,6 +25,7 @@ s = SearchFiles()
 
 redirector = 'root://eoscms.cern.ch/'
 redirector = ''
+useXROOTD = False
 
 def nanoGetSampleFiles(path, name):
     _files = s.searchFiles(path,  name, redirector=redirector)
